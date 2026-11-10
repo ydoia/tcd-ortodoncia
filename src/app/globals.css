@@ -1,0 +1,79 @@
+@import "tailwindcss";
+
+@theme {
+  --color-graphite: #14161a;
+  --color-steel: #22262c;
+  --color-iron: #2f343b;
+  --color-titanium: #8a9099;
+  --color-silver: #e4e6e9;
+  --color-bone: #f6f6f3;
+  --color-amber: #e8b21f;
+  --color-amber-soft: #f4d27a;
+  --color-sun: #f7d945;
+  --color-ember: #f2873a;
+  --font-display: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --animate-marquee: marquee 40s linear infinite;
+  --animate-scan: scan 3.2s ease-in-out infinite;
+}
+
+@keyframes marquee { to { transform: translateX(-50%); } }
+@keyframes scan { 0%,100% { transform: translateY(-10%); opacity: 0 } 15%,85% { opacity: 1 } 50% { transform: translateY(1100%); } }
+
+html { scroll-behavior: smooth; }
+body { background: var(--color-bone); color: var(--color-graphite); -webkit-font-smoothing: antialiased; }
+::selection { background: var(--color-amber); color: var(--color-graphite); }
+
+.font-display { font-family: var(--font-display); letter-spacing: -0.02em; }
+.tabular { font-variant-numeric: tabular-nums; }
+
+/* Malla técnica */
+.grid-tech {
+  background-image:
+    linear-gradient(to right, rgb(255 255 255 / 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(255 255 255 / 0.05) 1px, transparent 1px);
+  background-size: 56px 56px;
+}
+.grid-tech-light {
+  background-image:
+    linear-gradient(to right, rgb(20 22 26 / 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(20 22 26 / 0.05) 1px, transparent 1px);
+  background-size: 56px 56px;
+}
+.mask-fade { mask-image: radial-gradient(ellipse at center, black 30%, transparent 75%); }
+
+/* Botones */
+.btn {
+  display: inline-flex; align-items: center; gap: .6rem; border-radius: 999px;
+  padding: .85rem 1.5rem; font-weight: 600; font-size: .95rem; transition: all .25s ease;
+}
+.btn-primary { background: var(--color-amber); color: var(--color-graphite); box-shadow: 0 10px 30px -10px rgb(232 178 31 / .6); }
+.btn-primary:hover { background: var(--color-sun); transform: translateY(-1px); box-shadow: 0 14px 34px -10px rgb(232 178 31 / .8); }
+.btn-ghost-dark { border: 1px solid rgb(255 255 255 / .18); color: white; }
+.btn-ghost-dark:hover { background: rgb(255 255 255 / .08); border-color: rgb(255 255 255 / .35); }
+.btn-ghost { border: 1px solid rgb(20 22 26 / .15); color: var(--color-graphite); }
+.btn-ghost:hover { background: rgb(20 22 26 / .05); }
+
+/* Etiqueta tipo cota */
+.tag {
+  display: inline-flex; align-items: center; gap: .5rem; font-size: .7rem; font-weight: 600;
+  text-transform: uppercase; letter-spacing: .22em;
+}
+.tag::before { content: ""; width: 22px; height: 1px; background: currentColor; opacity: .6; }
+
+.card-dark {
+  background: linear-gradient(180deg, rgb(255 255 255 / .05), rgb(255 255 255 / .015));
+  border: 1px solid rgb(255 255 255 / .08);
+}
+.glow-amber { box-shadow: 0 0 0 1px rgb(232 178 31 / .35), 0 20px 60px -20px rgb(232 178 31 / .45); }
+
+.input {
+  width: 100%; border-radius: .9rem; border: 1px solid rgb(20 22 26 / .12); background: white;
+  padding: .8rem 1rem; font-size: .95rem; outline: none; transition: border .2s, box-shadow .2s;
+}
+.input:focus { border-color: var(--color-amber); box-shadow: 0 0 0 4px rgb(232 178 31 / .18); }
+.input-dark { background: rgb(255 255 255 / .04); border-color: rgb(255 255 255 / .12); color: white; }
+.input-dark::placeholder { color: rgb(255 255 255 / .35); }
+
+.no-scrollbar::-webkit-scrollbar { display: none; }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
