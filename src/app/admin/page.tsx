@@ -5,14 +5,14 @@ import { LogoMark } from "@/components/Logo";
 import RichEditor from "@/components/RichEditor";
 import {
   BackofficePost, PostKind, PostStatus, AutoNews, PendingClinic, LabCase,
-  BACKOFFICE_STORAGE_KEY, INITIAL_POSTS, INITIAL_RSS, INITIAL_CASES, INITIAL_CLINICS, toSlug,
+  BACKOFFICE_STORAGE_KEY, INITIAL_POSTS, INITIAL_RSS, INITIAL_CASES, INITIAL_CLINICS, CHANGELOG_ENTRIES, toSlug,
 } from "@/lib/backoffice";
 import {
   Grad, Spark, Plus, Lock, Check, Arrow, File, Upload, Shield, User, Cube,
-  ListIcon, EditIcon, TrashIcon, EyeIcon, RssIcon, MailIcon, Search,
+  ListIcon, EditIcon, TrashIcon, EyeIcon, RssIcon, MailIcon, Search, Clock,
 } from "@/components/Icons";
 
-type Section = "overview" | "courses" | "news" | "cases" | "clinics";
+type Section = "overview" | "courses" | "news" | "cases" | "clinics" | "changelog";
 type CourseTab = "list" | "editor";
 type NewsTab = "list" | "editor" | "rss";
 
@@ -26,6 +26,7 @@ export default function AdminPage() {
   const [courseTab, setCourseTab] = useState<CourseTab>("list");
   const [newsTab, setNewsTab] = useState<NewsTab>("list");
   const [statusFilter, setStatusFilter] = useState<"all" | PostStatus>("all");
+  const [selectedLogId, setSelectedLogId] = useState<string>(CHANGELOG_ENTRIES[0].id);
 
   const [posts, setPosts] = useState<BackofficePost[]>(INITIAL_POSTS);
   const [rssQueue, setRssQueue] = useState<AutoNews[]>(INITIAL_RSS);
@@ -234,36 +235,45 @@ export default function AdminPage() {
   const coursesList = posts.filter((p) => p.kind === "course");
   const newsList = posts.filter((p) => p.kind === "news");
   const pendingClinicsCount = clinics.filter((c) => !c.approved).length;
+  const activeLog = CHANGELOG_ENTRIES.find((e) => e.id === selectedLogId) || CHANGELOG_ENTRIES[0];
 
   const renderPostTable = (items: BackofficePost[], kind: PostKind) => {
-    const filtered = items.filter((p) => statusFilter === "all" || p.status === statusFilter);
+    const activeItems = items.filter((p) => p.status !== "trash");
+    const trashItems = items.filter((p) => p.status === "trash");
+    const filtered = statusFilter === "all" ? activeItems : items.filter((p) => p.status === statusFilter);
     return (
       <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
         <div className="px-6 py-4 bg-slate-50/70 border-b border-slate-200/80 flex flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center gap-1.5">
-            {([["all", "Todos"], ["published", "Publicados"], ["draft", "Borradores"]] as const).map(([k, lbl]) => (
+          <div className="flex flex-wrap items-center gap-1.5">
+            {([
+              ["all", `Todos (${activeItems.length})`],
+              ["published", "Publicados"],
+              ["draft", "Borradores"],
+              ["trash", `Papelera (${trashItems.length})`],
+            ] as const).map(([k, lbl]) => (
               <button
                 key={k}
                 onClick={() => setStatusFilter(k)}
-                className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${statusFilter === k ? "bg-white text-graphite shadow-xs ring-1 ring-slate-200" : "text-slate-500 hover:text-graphite"}`}
+                className={`px-3.5 py-1.5 rounded-lg text-sm font-medium transition-colors ${statusFilter === k ? "bg-white text-graphite shadow-xs ring-1 ring-slate-200" : "text-slate-500 hover:text-graphite"}`}
               >
                 {lbl}
               </button>
             ))}
           </div>
-          <button onClick={() => startNewInEditor(kind)} className="btn btn-primary !py-2 !px-4 text-sm">
+          <button onClick={() => startNewInEditor(kind)} className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-amber text-graphite hover:bg-sun text-xs font-semibold shadow-xs transition-colors">
             <Plus className="w-4 h-4" />{kind === "course" ? "Nuevo curso" : "Nueva noticia"}
           </button>
         </div>
 
         <div className="divide-y divide-slate-100">
           {filtered.length === 0 ? (
-            <div className="p-10 text-center text-sm text-slate-500">No hay elementos en este filtro.</div>
+            <div className="p-10 text-center text-sm text-slate-500">
+              {statusFilter === "trash" ? "La papelera está vacía." : "No hay elementos en este filtro."}
+            </div>
           ) : (
             filtered.map((p) => (
               <div key={p.id} className="px-6 py-5 flex flex-col md:flex-row md:items-center justify-between gap-5 hover:bg-slate-50/60 transition-colors">
                 <div className="flex items-start gap-4 min-w-0">
-                  {/* Miniatura izquierda */}
                   {p.image ? (
                     <img src={p.image} alt={p.title} className="w-20 h-14 rounded-xl object-cover shrink-0 border border-slate-200" />
                   ) : (
@@ -277,9 +287,15 @@ export default function AdminPage() {
                       <span className="px-2.5 py-0.5 rounded-md bg-slate-100 text-slate-700 font-medium">{p.tag}</span>
                       <span className="text-slate-400">·</span>
                       <span className="text-slate-500">{p.date}</span>
-                      <span className={`ml-1 inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium ${p.status === "published" ? "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200/70" : "bg-slate-100 text-slate-600 ring-1 ring-slate-200"}`}>
-                        <span className={`w-1.5 h-1.5 rounded-full ${p.status === "published" ? "bg-emerald-500" : "bg-slate-400"}`} />
-                        {p.status === "published" ? "Publicado" : "Borrador"}
+                      <span className={`ml-1 inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        p.status === "published"
+                          ? "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200/70"
+                          : p.status === "trash"
+                          ? "bg-rose-50 text-rose-700 ring-1 ring-rose-200/70"
+                          : "bg-slate-100 text-slate-600 ring-1 ring-slate-200"
+                      }`}>
+                        <span className={`w-1.5 h-1.5 rounded-full ${p.status === "published" ? "bg-emerald-500" : p.status === "trash" ? "bg-rose-500" : "bg-slate-400"}`} />
+                        {p.status === "published" ? "Publicado" : p.status === "trash" ? "En papelera" : "Borrador"}
                       </span>
                     </div>
                     <h3 className="font-display font-semibold text-[15px] text-graphite leading-snug">{p.title}</h3>
@@ -288,25 +304,53 @@ export default function AdminPage() {
                 </div>
 
                 <div className="flex items-center gap-2 shrink-0">
-                  <button
-                    onClick={() => openInEditor(p)}
-                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-white border border-slate-200 hover:border-slate-300 text-slate-700 text-xs font-semibold transition-colors"
-                  >
-                    <EditIcon className="w-3.5 h-3.5" />Editar
-                  </button>
-                  <button
-                    onClick={() => savePosts(posts.map((x) => x.id === p.id ? { ...x, status: x.status === "published" ? "draft" : "published" } : x))}
-                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-white border border-slate-200 hover:border-slate-300 text-slate-600 text-xs font-medium transition-colors"
-                  >
-                    <EyeIcon className="w-3.5 h-3.5" />{p.status === "published" ? "Ocultar" : "Publicar"}
-                  </button>
-                  <button
-                    onClick={() => savePosts(posts.filter((x) => x.id !== p.id))}
-                    title="Eliminar"
-                    className="p-2 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
-                  >
-                    <TrashIcon className="w-4 h-4" />
-                  </button>
+                  {p.status === "trash" ? (
+                    <>
+                      <button
+                        onClick={() => {
+                          savePosts(posts.map((x) => (x.id === p.id ? { ...x, status: "draft" } : x)));
+                          showToast("Restaurado a borradores.");
+                        }}
+                        className="px-3.5 py-2 rounded-lg bg-white border border-slate-200 hover:border-slate-300 text-slate-700 text-xs font-semibold transition-colors"
+                      >
+                        Restaurar
+                      </button>
+                      <button
+                        onClick={() => {
+                          savePosts(posts.filter((x) => x.id !== p.id));
+                          showToast("Eliminado permanentemente.");
+                        }}
+                        className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold transition-colors"
+                      >
+                        <TrashIcon className="w-3.5 h-3.5" />Eliminar permanentemente
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button
+                        onClick={() => openInEditor(p)}
+                        className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-white border border-slate-200 hover:border-slate-300 text-slate-700 text-xs font-semibold transition-colors"
+                      >
+                        <EditIcon className="w-3.5 h-3.5" />Editar
+                      </button>
+                      <button
+                        onClick={() => savePosts(posts.map((x) => x.id === p.id ? { ...x, status: x.status === "published" ? "draft" : "published" } : x))}
+                        className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-white border border-slate-200 hover:border-slate-300 text-slate-600 text-xs font-medium transition-colors"
+                      >
+                        <EyeIcon className="w-3.5 h-3.5" />{p.status === "published" ? "Ocultar" : "Publicar"}
+                      </button>
+                      <button
+                        onClick={() => {
+                          savePosts(posts.map((x) => (x.id === p.id ? { ...x, status: "trash" } : x)));
+                          showToast("Movido a la papelera.");
+                        }}
+                        title="Mover a papelera"
+                        className="p-2 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
+                      >
+                        <TrashIcon className="w-4 h-4" />
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
             ))
@@ -339,8 +383,12 @@ export default function AdminPage() {
 
       <aside className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden space-y-5 p-6">
         <div className="grid grid-cols-2 gap-2.5">
-          <button type="button" onClick={() => handleSavePost("draft")} className="btn btn-ghost !py-2.5 !px-3 justify-center text-sm">Guardar borrador</button>
-          <button type="button" onClick={() => handleSavePost("published")} className="btn btn-primary !py-2.5 !px-3 justify-center text-sm">Publicar</button>
+          <button type="button" onClick={() => handleSavePost("draft")} className="px-3 py-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold whitespace-nowrap transition-colors">
+            Guardar borrador
+          </button>
+          <button type="button" onClick={() => handleSavePost("published")} className="px-3 py-2.5 rounded-xl bg-amber hover:bg-sun text-graphite text-xs font-semibold whitespace-nowrap shadow-xs transition-colors">
+            Publicar
+          </button>
         </div>
 
         <div className="grid grid-cols-2 gap-1 p-1 rounded-xl bg-slate-100 text-xs font-semibold">
@@ -445,10 +493,11 @@ export default function AdminPage() {
         <nav className="p-4 space-y-1.5 flex-1">
           {[
             { id: "overview", label: "Dashboard", icon: <File className="w-4 h-4" /> },
-            { id: "courses", label: "Cursos y Formación", icon: <Grad className="w-4 h-4" />, badge: coursesList.length },
+            { id: "courses", label: "Cursos y Formación", icon: <Grad className="w-4 h-4" />, badge: coursesList.filter((p) => p.status !== "trash").length },
             { id: "news", label: "Noticias", icon: <Spark className="w-4 h-4" />, badge: rssQueue.length },
             { id: "cases", label: "Casos y Recogidas", icon: <Cube className="w-4 h-4" />, badge: cases.length },
             { id: "clinics", label: "Validar Clínicas", icon: <User className="w-4 h-4" />, badge: pendingClinicsCount },
+            { id: "changelog", label: "Registro de cambios", icon: <Clock className="w-4 h-4" />, badge: CHANGELOG_ENTRIES.length },
           ].map((item) => {
             const active = section === item.id;
             return (
@@ -487,6 +536,7 @@ export default function AdminPage() {
             {section === "news" && "Noticias y Actualidad RSS"}
             {section === "cases" && "Casos digitales y recogidas"}
             {section === "clinics" && "Validación de clínicas y tarifas"}
+            {section === "changelog" && "Registro de cambios y actualizaciones"}
           </h1>
           <div className="flex items-center gap-3 text-sm">
             <span className="hidden sm:inline-block text-slate-500">{emailInput}</span>
@@ -520,21 +570,17 @@ export default function AdminPage() {
                 <div className="flex flex-wrap items-center justify-between gap-4">
                   <div className="flex gap-1.5 bg-white p-1.5 rounded-xl border border-slate-200/80 shadow-xs">
                     <button
-                      onClick={() => setOverviewTab("course")}
+                      onClick={() => { setOverviewTab("course"); setStatusFilter("all"); }}
                       className={`px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 transition-colors ${overviewTab === "course" ? "bg-graphite text-white" : "text-slate-600 hover:text-graphite"}`}
                     >
-                      <Grad className="w-4 h-4" />Formación y Cursos ({coursesList.length})
+                      <Grad className="w-4 h-4" />Formación y Cursos ({coursesList.filter((p) => p.status !== "trash").length})
                     </button>
                     <button
-                      onClick={() => setOverviewTab("news")}
+                      onClick={() => { setOverviewTab("news"); setStatusFilter("all"); }}
                       className={`px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 transition-colors ${overviewTab === "news" ? "bg-graphite text-white" : "text-slate-600 hover:text-graphite"}`}
                     >
-                      <Spark className="w-4 h-4" />Noticias ({newsList.length})
+                      <Spark className="w-4 h-4" />Noticias ({newsList.filter((p) => p.status !== "trash").length})
                     </button>
-                  </div>
-                  <div className="flex gap-2.5">
-                    <button onClick={() => startNewInEditor("course")} className="btn btn-ghost !py-2.5 !px-4 text-sm"><Plus className="w-4 h-4" />Nuevo curso</button>
-                    <button onClick={() => startNewInEditor("news")} className="btn btn-primary !py-2.5 !px-4 text-sm"><Plus className="w-4 h-4" />Nueva noticia</button>
                   </div>
                 </div>
                 {renderPostTable(overviewTab === "course" ? coursesList : newsList, overviewTab)}
@@ -743,6 +789,71 @@ export default function AdminPage() {
                     ))}
                   </tbody>
                 </table>
+              </div>
+            </div>
+          )}
+
+          {/* 6. REGISTRO DE CAMBIOS (CHANGELOG MASTER-DETAIL) */}
+          {section === "changelog" && (
+            <div className="grid lg:grid-cols-[360px_1fr] gap-6 items-start">
+              {/* Lista de versiones a la izquierda */}
+              <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden divide-y divide-slate-100">
+                <div className="px-5 py-4 bg-slate-50/80 border-b border-slate-200/80">
+                  <h2 className="font-display font-semibold text-sm text-graphite">Historial de actualizaciones</h2>
+                  <p className="text-xs text-slate-500 mt-0.5">Selecciona una versión para ver el detalle técnico.</p>
+                </div>
+                {CHANGELOG_ENTRIES.map((entry) => {
+                  const active = entry.id === activeLog.id;
+                  return (
+                    <button
+                      key={entry.id}
+                      onClick={() => setSelectedLogId(entry.id)}
+                      className={`w-full text-left p-5 transition-colors flex flex-col gap-1.5 ${active ? "bg-amber/10 border-l-4 border-amber" : "hover:bg-slate-50"}`}
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="font-mono text-xs font-bold px-2 py-0.5 rounded bg-graphite text-white">{entry.version}</span>
+                        <span className="text-xs text-slate-400">{entry.date}</span>
+                      </div>
+                      <p className="font-display font-semibold text-sm text-graphite leading-snug">{entry.title}</p>
+                      <span className="text-[11px] font-medium text-slate-500">{entry.tag}</span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Detalle desplegado a la derecha */}
+              <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-7 lg:p-8 space-y-6">
+                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-5">
+                  <div className="space-y-1.5">
+                    <div className="flex items-center gap-2.5 text-xs">
+                      <span className="font-mono font-bold px-2.5 py-1 rounded-md bg-graphite text-white">{activeLog.version}</span>
+                      <span className="px-2.5 py-1 rounded-md bg-slate-100 text-slate-700 font-semibold">{activeLog.tag}</span>
+                      <span className="text-slate-400">· {activeLog.date}</span>
+                    </div>
+                    <h2 className="font-display text-2xl font-bold text-graphite">{activeLog.title}</h2>
+                  </div>
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200 text-xs font-semibold">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />Desplegado en vivo
+                  </span>
+                </div>
+
+                <p className="text-sm text-slate-600 leading-relaxed">{activeLog.summary}</p>
+
+                <div className="space-y-5">
+                  {activeLog.details.map((block) => (
+                    <div key={block.area} className="rounded-xl bg-slate-50 border border-slate-200/80 p-5 space-y-2.5">
+                      <h3 className="font-display font-semibold text-sm text-graphite">{block.area}</h3>
+                      <ul className="space-y-2">
+                        {block.items.map((it) => (
+                          <li key={it} className="flex items-start gap-2.5 text-sm text-slate-600 leading-relaxed">
+                            <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                            <span>{it}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           )}
