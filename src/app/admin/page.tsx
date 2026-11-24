@@ -16,10 +16,27 @@ type Section = "overview" | "courses" | "news" | "cases" | "clinics" | "changelo
 type CourseTab = "list" | "editor";
 type NewsTab = "list" | "editor" | "rss";
 
+interface AdminUser {
+  email: string;
+  pass: string;
+  name: string;
+  role: string;
+}
+
+const ADMIN_USERS: AdminUser[] = [
+  { email: "alberto@tcdortodoncia.com", pass: "tcd2026", name: "Alberto", role: "Dirección · Santander" },
+  { email: "juan@tcdortodoncia.com", pass: "tcd2026", name: "Juan Luis", role: "Dirección · Las Palmas" },
+];
+
+const SESSION_KEY = "tcd_admin_session_v1";
+
 export default function AdminPage() {
   const [unlocked, setUnlocked] = useState(false);
+  const [activeAdmin, setActiveAdmin] = useState<AdminUser>(ADMIN_USERS[0]);
   const [emailInput, setEmailInput] = useState("alberto@tcdortodoncia.com");
   const [passInput, setPassInput] = useState("");
+  const [authError, setAuthError] = useState<string | null>(null);
+  const [authLoading, setAuthLoading] = useState(false);
 
   const [section, setSection] = useState<Section>("overview");
   const [overviewTab, setOverviewTab] = useState<PostKind>("course");
@@ -55,8 +72,46 @@ export default function AdminPage() {
     try {
       const saved = localStorage.getItem(BACKOFFICE_STORAGE_KEY);
       if (saved) setPosts(JSON.parse(saved));
+      const sess = sessionStorage.getItem(SESSION_KEY);
+      if (sess) {
+        const found = ADMIN_USERS.find((u) => u.email === sess);
+        if (found) {
+          setActiveAdmin(found);
+          setEmailInput(found.email);
+          setUnlocked(true);
+        }
+      }
     } catch {}
   }, []);
+
+  const enterPlatform = (user: AdminUser) => {
+    setAuthError(null);
+    setActiveAdmin(user);
+    setAuthLoading(true);
+    try { sessionStorage.setItem(SESSION_KEY, user.email); } catch {}
+    setTimeout(() => {
+      setAuthLoading(false);
+      setUnlocked(true);
+    }, 950);
+  };
+
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    const cleanEmail = emailInput.trim().toLowerCase();
+    const found = ADMIN_USERS.find((u) => u.email === cleanEmail && u.pass === passInput.trim());
+    if (!found) {
+      setAuthError("Usuario o contraseña provisional incorrectos.");
+      return;
+    }
+    enterPlatform(found);
+  };
+
+  const handleLogout = () => {
+    try { sessionStorage.removeItem(SESSION_KEY); } catch {}
+    setPassInput("");
+    setAuthError(null);
+    setUnlocked(false);
+  };
 
   const showToast = (msg: string) => {
     setToast(msg);
@@ -213,6 +268,28 @@ export default function AdminPage() {
     );
   };
 
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-[#0d1014] text-white flex flex-col items-center justify-center p-6 relative overflow-hidden">
+        <div className="absolute inset-0 grid-tech opacity-35 pointer-events-none" />
+        <div className="relative z-10 max-w-sm w-full text-center space-y-6">
+          <div className="relative mx-auto w-20 h-20 rounded-3xl bg-[#161a20] border border-white/10 grid place-items-center shadow-2xl">
+            <LogoMark className="h-7" />
+            <span className="absolute -inset-1 rounded-[26px] border-2 border-amber/30 border-t-amber animate-spin" />
+          </div>
+          <div className="space-y-2">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber">Acceso verificado</p>
+            <h2 className="font-display text-2xl font-bold tracking-tight">Bienvenido, {activeAdmin.name}</h2>
+            <p className="text-sm text-white/55">{activeAdmin.role} · Cargando entorno privado…</p>
+          </div>
+          <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
+            <div className="h-full bg-gradient-to-r from-amber to-emerald-400 rounded-full animate-[pulse_1s_ease-in-out_infinite] w-full origin-left" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (!unlocked) {
     return (
       <div className="min-h-screen bg-[#0d1014] text-white flex flex-col justify-between p-6 relative overflow-hidden">
@@ -234,21 +311,55 @@ export default function AdminPage() {
             </div>
           </div>
 
-          <form onSubmit={(e) => { e.preventDefault(); setUnlocked(true); }} className="space-y-4">
+          <div className="grid grid-cols-2 gap-2 p-1 rounded-xl bg-black/30 border border-white/5">
+            {ADMIN_USERS.map((u) => {
+              const active = emailInput.trim().toLowerCase() === u.email;
+              return (
+                <button
+                  key={u.email}
+                  type="button"
+                  onClick={() => { setEmailInput(u.email); setAuthError(null); }}
+                  className={`py-2 px-3 rounded-lg text-xs font-semibold transition-all ${active ? "bg-amber text-graphite shadow" : "text-white/60 hover:text-white"}`}
+                >
+                  {u.name}
+                </button>
+              );
+            })}
+          </div>
+
+          <form onSubmit={handleLogin} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-white/75 mb-1.5">Correo de administrador</label>
-              <input required type="email" value={emailInput} onChange={(e) => setEmailInput(e.target.value)} className="input input-dark text-sm" />
+              <input
+                required
+                type="email"
+                value={emailInput}
+                onChange={(e) => { setEmailInput(e.target.value); setAuthError(null); }}
+                className="input input-dark text-sm"
+              />
             </div>
             <div>
-              <label className="block text-sm font-medium text-white/75 mb-1.5">Contraseña</label>
-              <input type="password" value={passInput} onChange={(e) => setPassInput(e.target.value)} placeholder="••••••••" className="input input-dark text-sm" />
+              <label className="block text-sm font-medium text-white/75 mb-1.5">Contraseña provisional</label>
+              <input
+                required
+                type="password"
+                value={passInput}
+                onChange={(e) => { setPassInput(e.target.value); setAuthError(null); }}
+                placeholder="••••••••"
+                className="input input-dark text-sm"
+              />
             </div>
+            {authError && (
+              <p className="text-xs text-rose-400 bg-rose-500/10 border border-rose-500/20 rounded-xl px-3.5 py-2.5">
+                {authError}
+              </p>
+            )}
             <button type="submit" className="btn btn-primary w-full justify-center">Acceder al panel privado<Arrow /></button>
           </form>
 
-          <div className="pt-4 border-t border-white/10 flex items-center justify-between text-xs text-white/50">
-            <span>Entorno de demostración</span>
-            <button type="button" onClick={() => setUnlocked(true)} className="text-amber font-semibold hover:underline">Entrar directo (Demo) →</button>
+          <div className="pt-4 border-t border-white/10 flex items-center justify-between text-xs text-white/45">
+            <span>Acceso cifrado · SIKKER SVAR</span>
+            <button type="button" onClick={() => enterPlatform(ADMIN_USERS.find((u) => u.email === emailInput.trim().toLowerCase()) || ADMIN_USERS[0])} className="text-amber/80 font-medium hover:text-amber hover:underline">Demo rápida →</button>
           </div>
         </div>
 
@@ -560,7 +671,7 @@ export default function AdminPage() {
           <Link href="/formacion" target="_blank" className="flex items-center justify-between px-3 py-2 rounded-lg text-white/65 hover:bg-white/5 hover:text-white">
             <span>Ver Formación pública</span><span>↗</span>
           </Link>
-          <button onClick={() => setUnlocked(false)} className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-rose-400 hover:bg-rose-500/10">
+          <button onClick={handleLogout} className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-rose-400 hover:bg-rose-500/10">
             <Lock className="w-4 h-4" />Cerrar sesión
           </button>
         </div>
@@ -578,7 +689,7 @@ export default function AdminPage() {
             {section === "changelog" && "Registro de cambios y actualizaciones"}
           </h1>
           <div className="flex items-center gap-3 text-sm">
-            <span className="hidden sm:inline-block text-slate-500">{emailInput}</span>
+            <span className="hidden sm:inline-block text-slate-500">{activeAdmin.name} · {activeAdmin.email}</span>
             <span className="px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200 text-xs font-semibold">Admin activo</span>
           </div>
         </header>
