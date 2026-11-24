@@ -16,7 +16,7 @@ export function LogoMark({ className = "h-7" }: { className?: string; forceColor
         r="16"
         fill="#E8B21F"
         opacity="0.92"
-        className="origin-[46px_18px] transition-transform duration-300 delay-75 ease-out group-hover:scale-115 group-hover:-translate-y-1"
+        className="origin-[46px_18px] transition-transform duration-300 delay-75 ease-out group-hover:scale-115 group-hover:-translate-y-0.5"
       />
       <circle
         cx="74"

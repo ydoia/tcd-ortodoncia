@@ -1,13 +1,27 @@
 "use client";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { LogoMark } from "@/components/Logo";
-import { Grad, Spark, Plus, Lock, Check, Arrow, File, Upload, Shield, User } from "@/components/Icons";
+import RichEditor from "@/components/RichEditor";
+import { Grad, Spark, Plus, Lock, Check, Arrow, File, Upload, Shield, User, Cube } from "@/components/Icons";
 
-type Section = "overview" | "editor" | "rss" | "clinics";
-type PostItem = { id: string; tag: string; date: string; title: string; html: string; image?: string; visible: boolean };
+type Section = "overview" | "editor" | "rss" | "cases" | "clinics";
+type PostStatus = "published" | "draft";
+type PostItem = {
+  id: string;
+  tag: string;
+  date: string;
+  title: string;
+  slug: string;
+  metaTitle: string;
+  metaDesc: string;
+  html: string;
+  image?: string;
+  status: PostStatus;
+};
 type AutoNews = { id: string; source: string; date: string; title: string; summary: string };
 type PendingClinic = { id: string; clinic: string; doctor: string; email: string; dni: string; colegiado: string; lab: string; approved: boolean };
+type LabCase = { id: string; clinic: string; doctor: string; product: string; type: string; lab: string; date: string; stage: string };
 
 const INITIAL_POSTS: PostItem[] = [
   {
@@ -15,24 +29,33 @@ const INITIAL_POSTS: PostItem[] = [
     tag: "Formación",
     date: "Marzo 2027",
     title: "Taller práctico de flujo digital y MARPE sobre microtornillos",
+    slug: "taller-flujo-digital-marpe-microtornillos",
+    metaTitle: "Taller MARPE y Flujo Digital 3D · TCD Ortodoncia",
+    metaDesc: "Formación práctica para ortodoncistas sobre alineación CBCT + STL y férulas guiadas.",
     html: "<p>Sesión clínica presencial y online para equipos de ortodoncia. Revisaremos alineación de escaneado intraoral con CBCT y diseño de férulas de inserción guiada.</p>",
-    visible: true,
+    status: "published",
   },
   {
     id: "p2",
     tag: "Novedad técnica",
     date: "Noviembre 2026",
     title: "Cementado indirecto y directo 3D con cubetas impresas",
+    slug: "cementado-indirecto-directo-3d-cubetas",
+    metaTitle: "Cementado Indirecto 3D · TCD Ortodoncia",
+    metaDesc: "Guías de inserción de alta precisión compatibles con 3M APC Flash-Free.",
     html: "<p>Guías de inserción de alta precisión compatibles con <strong>3M APC Flash-Free</strong> y cualquier sistema de brackets.</p>",
-    visible: true,
+    status: "published",
   },
   {
     id: "p3",
     tag: "Congreso",
-    date: "SEDO",
-    title: "Participación y taller práctico en el Congreso de Ortodoncia",
-    html: "<p>Presentación de flujos digitales completos y dispositivos intraorales de apnea D.A.M.A. TCD®.</p>",
-    visible: true,
+    date: "Próxima edición",
+    title: "Borrador: Taller D.A.M.A. TCD® y dispositivos de apnea en nylon",
+    slug: "taller-dama-tcd-apnea-nylon",
+    metaTitle: "Taller D.A.M.A. TCD® · Apnea del Sueño",
+    metaDesc: "Protocolo clínico y toma de registro constructivo para dispositivos intraorales.",
+    html: "<p>Pendiente de confirmar fechas definitivas con el ponente y adjuntar programa en PDF.</p>",
+    status: "draft",
   },
 ];
 
@@ -53,35 +76,50 @@ const INITIAL_RSS: AutoNews[] = [
   },
 ];
 
+const INITIAL_CASES: LabCase[] = [
+  { id: "CAS-2084", clinic: "Clínica Dental Bahía", doctor: "Dra. Elena Ruiz", product: "MARPE Power-Screw", type: "STL + DICOM", lab: "Santander", date: "Hoy · 09:15", stage: "En diseño CAD" },
+  { id: "CAS-2083", clinic: "Ortodoncia Atlántico", doctor: "Dr. Marcos León", product: "DDBG nylon regulable", type: "STL + Registro", lab: "Las Palmas", date: "Hoy · 08:40", stage: "Producción 8h" },
+  { id: "CAS-2082", clinic: "Instituto Dental Norte", doctor: "Dr. Pablo Sáez", product: "Recogida física (modelo)", type: "Mensajería gratis", lab: "Santander", date: "Ayer · 17:20", stage: "Recibido" },
+];
+
 const INITIAL_CLINICS: PendingClinic[] = [
   { id: "c1", clinic: "Clínica Dental Bahía", doctor: "Dra. Elena Ruiz", email: "elena@clinicabahia.es", dni: "72091843K", colegiado: "39001482", lab: "Santander", approved: false },
   { id: "c2", clinic: "Ortodoncia Atlántico", doctor: "Dr. Marcos León", email: "mleon@ortodonciaatlantico.es", dni: "43812055M", colegiado: "35002190", lab: "Las Palmas", approved: true },
   { id: "c3", clinic: "Instituto Dental Norte", doctor: "Dr. Pablo Sáez", email: "direccion@dentalnorte.es", dni: "13940218P", colegiado: "39002011", lab: "Santander", approved: false },
 ];
 
+const toSlug = (s: string) =>
+  s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+
 export default function AdminPage() {
   const [unlocked, setUnlocked] = useState(false);
   const [emailInput, setEmailInput] = useState("alberto@tcdortodoncia.com");
   const [passInput, setPassInput] = useState("");
   const [section, setSection] = useState<Section>("overview");
+  const [filterStatus, setFilterStatus] = useState<"all" | PostStatus>("all");
 
   const [posts, setPosts] = useState<PostItem[]>(INITIAL_POSTS);
   const [rssQueue, setRssQueue] = useState<AutoNews[]>(INITIAL_RSS);
+  const [cases, setCases] = useState<LabCase[]>(INITIAL_CASES);
   const [clinics, setClinics] = useState<PendingClinic[]>(INITIAL_CLINICS);
   const [notifyOnApprove, setNotifyOnApprove] = useState(true);
   const [toast, setToast] = useState<string | null>(null);
 
-  // WYSIWYG state
+  // Editor WordPress-style state
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [title, setTitle] = useState("");
+  const [slug, setSlug] = useState("");
   const [tag, setTag] = useState("Formación");
   const [date, setDate] = useState("");
-  const [coverImg, setCoverImg] = useState<string>("");
-  const [previewHtml, setPreviewHtml] = useState("<p>Escribe aquí el contenido del curso o noticia...</p>");
-  const editorRef = useRef<HTMLDivElement>(null);
+  const [coverImg, setCoverImg] = useState("");
+  const [html, setHtml] = useState("<p></p>");
+  const [metaTitle, setMetaTitle] = useState("");
+  const [metaDesc, setMetaDesc] = useState("");
+  const [inspectorTab, setInspectorTab] = useState<"doc" | "seo">("doc");
 
   useEffect(() => {
     try {
-      const saved = localStorage.getItem("tcd_backoffice_posts");
+      const saved = localStorage.getItem("tcd_backoffice_v2");
       if (saved) setPosts(JSON.parse(saved));
     } catch {}
   }, []);
@@ -93,13 +131,61 @@ export default function AdminPage() {
 
   const savePosts = (next: PostItem[]) => {
     setPosts(next);
-    try { localStorage.setItem("tcd_backoffice_posts", JSON.stringify(next)); } catch {}
+    try { localStorage.setItem("tcd_backoffice_v2", JSON.stringify(next)); } catch {}
   };
 
-  const execCmd = (cmd: string, val?: string) => {
-    editorRef.current?.focus();
-    document.execCommand(cmd, false, val);
-    if (editorRef.current) setPreviewHtml(editorRef.current.innerHTML);
+  const resetEditor = () => {
+    setEditingId(null);
+    setTitle("");
+    setSlug("");
+    setTag("Formación");
+    setDate("");
+    setCoverImg("");
+    setHtml("<p></p>");
+    setMetaTitle("");
+    setMetaDesc("");
+  };
+
+  const openInEditor = (p: PostItem) => {
+    setEditingId(p.id);
+    setTitle(p.title);
+    setSlug(p.slug);
+    setTag(p.tag);
+    setDate(p.date);
+    setCoverImg(p.image || "");
+    setHtml(p.html);
+    setMetaTitle(p.metaTitle);
+    setMetaDesc(p.metaDesc);
+    setSection("editor");
+  };
+
+  const handleSavePost = (targetStatus: PostStatus) => {
+    if (!title.trim()) {
+      showToast("Añade un título antes de guardar.");
+      return;
+    }
+    const cleanSlug = slug.trim() || toSlug(title);
+    const payload: PostItem = {
+      id: editingId || Date.now().toString(),
+      tag,
+      date: date || (targetStatus === "draft" ? "Borrador" : "Publicado hoy"),
+      title: title.trim(),
+      slug: cleanSlug,
+      metaTitle: metaTitle.trim() || `${title.trim()} · TCD Ortodoncia`,
+      metaDesc: metaDesc.trim() || "Contenido técnico y formación especializada de TCD Ortodoncia.",
+      html,
+      image: coverImg || undefined,
+      status: targetStatus,
+    };
+
+    if (editingId) {
+      savePosts(posts.map((p) => (p.id === editingId ? payload : p)));
+    } else {
+      savePosts([payload, ...posts]);
+    }
+    resetEditor();
+    showToast(targetStatus === "draft" ? "Borrador guardado (no visible en la web)." : "Publicado en la web pública.");
+    setSection("overview");
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -110,45 +196,33 @@ export default function AdminPage() {
     reader.readAsDataURL(file);
   };
 
-  const handlePublish = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!title.trim()) return;
-    const html = editorRef.current?.innerHTML || previewHtml;
-    const item: PostItem = {
-      id: Date.now().toString(),
-      tag,
-      date: date || "Publicado hoy",
-      title: title.trim(),
-      html,
-      image: coverImg || undefined,
-      visible: true,
-    };
-    savePosts([item, ...posts]);
-    setTitle("");
-    setDate("");
-    setCoverImg("");
-    if (editorRef.current) editorRef.current.innerHTML = "<p>Escribe aquí el contenido del curso o noticia...</p>";
-    setPreviewHtml("<p>Escribe aquí el contenido del curso o noticia...</p>");
-    showToast("Publicado correctamente en la sección Formación y Noticias.");
-    setSection("overview");
-  };
-
   const approveRss = (item: AutoNews) => {
-    savePosts([{ id: item.id, tag: "Actualidad científica", date: item.source, title: item.title, html: `<p>${item.summary}</p>`, visible: true }, ...posts]);
+    const p: PostItem = {
+      id: item.id,
+      tag: "Actualidad científica",
+      date: item.source,
+      title: item.title,
+      slug: toSlug(item.title),
+      metaTitle: item.title,
+      metaDesc: item.summary,
+      html: `<p>${item.summary}</p>`,
+      status: "published",
+    };
+    savePosts([p, ...posts]);
     setRssQueue((q) => q.filter((x) => x.id !== item.id));
-    showToast("Noticia aprobada y publicada en la web.");
+    showToast("Noticia RSS aprobada y publicada.");
   };
 
-  const editRssInWysiwyg = (item: AutoNews) => {
+  const editRssInEditor = (item: AutoNews) => {
+    setEditingId(null);
     setTitle(item.title);
+    setSlug(toSlug(item.title));
     setTag("Actualidad científica");
     setDate(item.source);
-    const html = `<p>${item.summary}</p>`;
-    setPreviewHtml(html);
+    setHtml(`<p>${item.summary}</p>`);
+    setMetaTitle(item.title);
+    setMetaDesc(item.summary);
     setSection("editor");
-    setTimeout(() => {
-      if (editorRef.current) editorRef.current.innerHTML = html;
-    }, 50);
   };
 
   const toggleClinicApproval = (id: string) => {
@@ -156,24 +230,19 @@ export default function AdminPage() {
       list.map((c) => {
         if (c.id !== id) return c;
         const nextApproved = !c.approved;
-        if (nextApproved && notifyOnApprove) {
-          showToast(`Tarifas autorizadas. Aviso enviado a ${c.email}`);
-        } else {
-          showToast(nextApproved ? "Tarifas autorizadas." : "Acceso a tarifas revocado.");
-        }
+        showToast(nextApproved && notifyOnApprove ? `Tarifas activadas. Aviso enviado a ${c.email}` : nextApproved ? "Tarifas autorizadas." : "Acceso revocado.");
         return { ...c, approved: nextApproved };
       })
     );
   };
 
-  // PANTALLA DE LOGIN PRIVADA (AISLADA DE LA WEB PÚBLICA)
   if (!unlocked) {
     return (
       <div className="min-h-screen bg-[#0d1014] text-white flex flex-col justify-between p-6 relative overflow-hidden">
         <div className="absolute inset-0 grid-tech opacity-40 pointer-events-none" />
         <div className="relative z-10 flex items-center justify-between max-w-6xl w-full mx-auto">
           <div className="flex items-center gap-3">
-            <LogoMark className="h-6" forceColors />
+            <LogoMark className="h-6" />
             <span className="font-display font-bold tracking-tight text-lg">TCD <span className="text-white/40 font-normal text-xs tracking-[0.22em] ml-1">BACKOFFICE</span></span>
           </div>
           <Link href="/" className="text-xs text-white/50 hover:text-amber transition-colors">← Volver a web pública</Link>
@@ -212,10 +281,10 @@ export default function AdminPage() {
   }
 
   const pendingClinicsCount = clinics.filter((c) => !c.approved).length;
+  const filteredPosts = posts.filter((p) => filterStatus === "all" || p.status === filterStatus);
 
   return (
     <div className="min-h-screen bg-[#f2f4f7] text-graphite flex flex-col lg:flex-row">
-      {/* Toast flotante */}
       {toast && (
         <div className="fixed top-5 right-5 z-50 bg-graphite text-white px-5 py-3 rounded-2xl shadow-2xl border border-amber/40 text-xs font-semibold flex items-center gap-2.5">
           <span className="w-5 h-5 rounded-full bg-emerald-500 text-white grid place-items-center"><Check className="w-3 h-3" /></span>
@@ -224,9 +293,9 @@ export default function AdminPage() {
       )}
 
       {/* SIDEBAR PRIVADA FIJA */}
-      <aside className="lg:w-68 bg-[#12151a] text-white flex flex-col shrink-0 border-r border-white/5">
+      <aside className="lg:w-64 bg-[#12151a] text-white flex flex-col shrink-0 border-r border-white/5">
         <div className="p-6 border-b border-white/10 flex items-center gap-3">
-          <LogoMark className="h-5" forceColors />
+          <LogoMark className="h-5" />
           <div>
             <p className="font-display font-bold text-sm leading-none">TCD BACKOFFICE</p>
             <p className="text-[10px] text-amber tracking-[0.18em] uppercase mt-1">Gestión interna</p>
@@ -238,13 +307,17 @@ export default function AdminPage() {
             { id: "overview", label: "Resumen y Publicado", icon: <File className="w-4 h-4" /> },
             { id: "editor", label: "Editor Cursos / Noticias", icon: <Grad className="w-4 h-4" /> },
             { id: "rss", label: "Noticias RSS Auto", icon: <Spark className="w-4 h-4" />, badge: rssQueue.length },
+            { id: "cases", label: "Casos y Recogidas", icon: <Cube className="w-4 h-4" />, badge: cases.length },
             { id: "clinics", label: "Validar Clínicas", icon: <User className="w-4 h-4" />, badge: pendingClinicsCount },
           ].map((item) => {
             const active = section === item.id;
             return (
               <button
                 key={item.id}
-                onClick={() => setSection(item.id as Section)}
+                onClick={() => {
+                  if (item.id === "editor" && section !== "editor") resetEditor();
+                  setSection(item.id as Section);
+                }}
                 className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-xs font-semibold transition-all ${active ? "bg-amber text-graphite shadow" : "text-white/65 hover:bg-white/5 hover:text-white"}`}
               >
                 <span className="flex items-center gap-3">{item.icon}{item.label}</span>
@@ -268,14 +341,15 @@ export default function AdminPage() {
         </div>
       </aside>
 
-      {/* ÁREA DE TRABAJO PRINCIPAL */}
+      {/* ÁREA DE TRABAJO */}
       <div className="flex-1 flex flex-col min-w-0">
-        <header className="bg-white border-b border-black/5 px-6 lg:px-10 h-16 flex items-center justify-between">
+        <header className="bg-white border-b border-black/5 px-6 lg:px-8 h-16 flex items-center justify-between">
           <p className="font-display font-semibold text-base">
-            {section === "overview" && "Resumen de contenido público"}
-            {section === "editor" && "Editor WYSIWYG · Formación y Noticias"}
+            {section === "overview" && "Resumen de contenido público y borradores"}
+            {section === "editor" && (editingId ? "Editando publicación" : "Nueva publicación · Editor visual")}
             {section === "rss" && "Curación automática RSS del sector"}
-            {section === "clinics" && "Control de altas y tarifas privadas"}
+            {section === "cases" && "Bandeja de prescripciones STL/DICOM y recogidas"}
+            {section === "clinics" && "Control de altas, DNI/colegiado y tarifas privadas"}
           </p>
           <div className="flex items-center gap-3 text-xs">
             <span className="hidden sm:inline-block text-graphite/50">{emailInput}</span>
@@ -283,16 +357,16 @@ export default function AdminPage() {
           </div>
         </header>
 
-        <div className="p-6 lg:p-10 max-w-6xl w-full space-y-8">
+        <div className="p-6 lg:p-8 max-w-7xl w-full space-y-6">
           {/* 1. RESUMEN Y CONTENIDO PUBLICADO */}
           {section === "overview" && (
             <>
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 {[
-                  ["Publicaciones activas", posts.filter((p) => p.visible).length, "En /formacion"],
+                  ["Publicados en web", posts.filter((p) => p.status === "published").length, "Visibles en /formacion"],
+                  ["Borradores guardados", posts.filter((p) => p.status === "draft").length, "Solo visibles aquí"],
                   ["Noticias RSS en cola", rssQueue.length, "Pendientes de aprobar"],
                   ["Clínicas por validar", pendingClinicsCount, "Esperando tarifas"],
-                  ["Clínicas autorizadas", clinics.filter((c) => c.approved).length, "Con acceso a precios"],
                 ].map(([lbl, val, sub]) => (
                   <div key={String(lbl)} className="bg-white rounded-2xl p-5 border border-black/5 shadow-xs">
                     <p className="text-xs text-graphite/55 font-medium">{lbl}</p>
@@ -303,36 +377,47 @@ export default function AdminPage() {
               </div>
 
               <div className="bg-white rounded-2xl border border-black/5 shadow-xs overflow-hidden">
-                <div className="px-6 py-4 border-b border-black/5 flex items-center justify-between">
-                  <h2 className="font-display text-lg">Lo que se muestra actualmente en la web pública</h2>
-                  <button onClick={() => setSection("editor")} className="btn btn-primary !py-2 !px-4 text-xs"><Plus className="w-3.5 h-3.5" />Nueva publicación</button>
+                <div className="px-6 py-4 border-b border-black/5 flex flex-wrap items-center justify-between gap-3">
+                  <div className="flex items-center gap-2">
+                    {[
+                      ["all", "Todos"],
+                      ["published", "Publicados"],
+                      ["draft", "Borradores"],
+                    ].map(([k, lbl]) => (
+                      <button
+                        key={k}
+                        onClick={() => setFilterStatus(k as "all" | PostStatus)}
+                        className={`px-3.5 py-1.5 rounded-full text-xs font-semibold ${filterStatus === k ? "bg-graphite text-white" : "bg-bone text-graphite/65 hover:text-graphite"}`}
+                      >
+                        {lbl}
+                      </button>
+                    ))}
+                  </div>
+                  <button onClick={() => { resetEditor(); setSection("editor"); }} className="btn btn-primary !py-2 !px-4 text-xs"><Plus className="w-3.5 h-3.5" />Nueva publicación</button>
                 </div>
                 <div className="divide-y divide-black/5">
-                  {posts.map((p) => (
-                    <div key={p.id} className="px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  {filteredPosts.map((p) => (
+                    <div key={p.id} className="px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-[#fafbfc]">
                       <div className="space-y-1">
                         <div className="flex items-center gap-2 text-xs">
                           <span className="px-2.5 py-0.5 rounded-full bg-bone font-semibold">{p.tag}</span>
                           <span className="text-graphite/45">{p.date}</span>
-                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${p.visible ? "bg-emerald-100 text-emerald-700" : "bg-silver text-graphite/50"}`}>
-                            {p.visible ? "Publicado" : "Oculto"}
+                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${p.status === "published" ? "bg-emerald-100 text-emerald-700" : "bg-amber/25 text-amber-900"}`}>
+                            {p.status === "published" ? "Publicado" : "Borrador"}
                           </span>
                         </div>
                         <p className="font-semibold text-sm">{p.title}</p>
+                        <p className="text-[11px] font-mono text-graphite/40">/formacion/{p.slug}</p>
                       </div>
                       <div className="flex items-center gap-2 shrink-0 text-xs">
+                        <button onClick={() => openInEditor(p)} className="px-3 py-1.5 rounded-lg bg-bone hover:bg-amber/20 font-semibold">Editar</button>
                         <button
-                          onClick={() => savePosts(posts.map((x) => x.id === p.id ? { ...x, visible: !x.visible } : x))}
+                          onClick={() => savePosts(posts.map((x) => x.id === p.id ? { ...x, status: x.status === "published" ? "draft" : "published" } : x))}
                           className="px-3 py-1.5 rounded-lg border border-black/10 hover:bg-bone font-medium"
                         >
-                          {p.visible ? "Ocultar" : "Mostrar"}
+                          {p.status === "published" ? "Pasar a borrador" : "Publicar"}
                         </button>
-                        <button
-                          onClick={() => savePosts(posts.filter((x) => x.id !== p.id))}
-                          className="px-3 py-1.5 rounded-lg text-rose-600 hover:bg-rose-50 font-medium"
-                        >
-                          Eliminar
-                        </button>
+                        <button onClick={() => savePosts(posts.filter((x) => x.id !== p.id))} className="px-3 py-1.5 rounded-lg text-rose-600 hover:bg-rose-50 font-medium">Eliminar</button>
                       </div>
                     </div>
                   ))}
@@ -341,104 +426,112 @@ export default function AdminPage() {
             </>
           )}
 
-          {/* 2. EDITOR WYSIWYG RICO + PREVIEW EN VIVO */}
+          {/* 2. EDITOR PROFESIONAL TIPO WORDPRESS (LIENZO TIPTAP + INSPECTOR DERECHO) */}
           {section === "editor" && (
-            <div className="grid lg:grid-cols-[1.2fr_0.8fr] gap-6 items-start">
-              <form onSubmit={handlePublish} className="bg-white rounded-2xl p-6 border border-black/5 space-y-4">
-                <div className="grid sm:grid-cols-2 gap-4">
-                  <div className="sm:col-span-2">
-                    <label className="block text-xs font-semibold mb-1.5">Título del curso o noticia *</label>
-                    <input required value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Ej. Curso avanzado de flujo digital y MARPE" className="input text-sm" />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-semibold mb-1.5">Categoría</label>
-                    <select value={tag} onChange={(e) => setTag(e.target.value)} className="input text-sm">
-                      <option>Formación</option>
-                      <option>Congreso</option>
-                      <option>Novedad técnica</option>
-                      <option>Actualidad científica</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-xs font-semibold mb-1.5">Fecha o convocatoria</label>
-                    <input value={date} onChange={(e) => setDate(e.target.value)} placeholder="Ej. Marzo 2027" className="input text-sm" />
-                  </div>
+            <div className="grid lg:grid-cols-[1fr_340px] gap-6 items-start">
+              {/* Lienzo central */}
+              <div className="space-y-4 min-w-0">
+                <div className="bg-white rounded-2xl p-6 border border-black/5 shadow-xs">
+                  <input
+                    value={title}
+                    onChange={(e) => {
+                      setTitle(e.target.value);
+                      if (!editingId) setSlug(toSlug(e.target.value));
+                    }}
+                    placeholder="Añade un título claro para el curso o noticia…"
+                    className="w-full font-display text-2xl sm:text-3xl font-bold outline-none placeholder:text-graphite/25"
+                  />
+                  <p className="text-[11px] font-mono text-graphite/40 mt-2">
+                    URL: https://tcdortodoncia.com/formacion/<span className="text-graphite/80">{slug || toSlug(title) || "nueva-publicacion"}</span>
+                  </p>
                 </div>
 
-                {/* Imagen destacada */}
-                <div>
-                  <label className="block text-xs font-semibold mb-1.5">Imagen de portada (opcional)</label>
-                  <label className="flex items-center justify-between px-4 py-3 rounded-xl border border-dashed border-black/20 hover:border-amber cursor-pointer bg-bone/50 text-xs">
-                    <span className="flex items-center gap-2 text-graphite/70"><Upload className="w-4 h-4 text-amber" />{coverImg ? "Imagen cargada ✓ (clic para cambiar)" : "Subir fotografía o cartel del curso..."}</span>
-                    <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
-                  </label>
-                </div>
-
-                {/* Toolbar WYSIWYG real */}
-                <div>
-                  <label className="block text-xs font-semibold mb-1.5">Contenido (Editor visual WYSIWYG)</label>
-                  <div className="border border-black/15 rounded-xl overflow-hidden">
-                    <div className="bg-bone px-3 py-2 border-b border-black/10 flex flex-wrap gap-1.5">
-                      {[
-                        ["bold", "Negrita", "B"],
-                        ["italic", "Cursiva", "I"],
-                        ["formatBlock", "Subtítulo", "H3"],
-                        ["insertUnorderedList", "Lista", "• Lista"],
-                      ].map(([cmd, titleAttr, label]) => (
-                        <button
-                          key={label}
-                          type="button"
-                          title={titleAttr}
-                          onClick={() => execCmd(cmd, cmd === "formatBlock" ? "h3" : undefined)}
-                          className="px-2.5 py-1 rounded bg-white border border-black/10 text-xs font-bold hover:bg-amber/20"
-                        >
-                          {label}
-                        </button>
-                      ))}
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const url = prompt("Introduce la URL del enlace:");
-                          if (url) execCmd("createLink", url);
-                        }}
-                        className="px-2.5 py-1 rounded bg-white border border-black/10 text-xs font-semibold hover:bg-amber/20"
-                      >
-                        🔗 Enlace
-                      </button>
-                    </div>
-                    <div
-                      ref={editorRef}
-                      contentEditable
-                      suppressContentEditableWarning
-                      onInput={(e) => setPreviewHtml(e.currentTarget.innerHTML)}
-                      className="min-h-[180px] p-4 text-sm outline-none prose prose-sm max-w-none bg-white"
-                      dangerouslySetInnerHTML={{ __html: "<p>Escribe aquí el contenido del curso o noticia...</p>" }}
-                    />
-                  </div>
-                </div>
-
-                <button type="submit" className="btn btn-primary text-sm"><Check className="w-4 h-4" />Publicar en la web</button>
-              </form>
-
-              {/* Vista previa en tiempo real */}
-              <div className="space-y-3">
-                <p className="text-xs font-bold uppercase tracking-wider text-titanium">Vista previa en tiempo real (Web pública)</p>
-                <article className="bg-white rounded-3xl overflow-hidden border border-black/5 shadow-sm">
-                  {coverImg && (
-                    <div className="h-44 overflow-hidden">
-                      <img src={coverImg} alt="" className="w-full h-full object-cover" />
-                    </div>
-                  )}
-                  <div className="p-6 space-y-3">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="px-3 py-1 rounded-full bg-bone font-semibold">{tag}</span>
-                      <span className="text-graphite/45">{date || "Fecha"}</span>
-                    </div>
-                    <h3 className="font-display text-xl leading-snug">{title || "Título de tu curso o noticia"}</h3>
-                    <div className="text-xs text-graphite/65 leading-relaxed space-y-2" dangerouslySetInnerHTML={{ __html: previewHtml }} />
-                  </div>
-                </article>
+                <RichEditor value={html} onChange={setHtml} />
               </div>
+
+              {/* Inspector lateral derecho (estilo WordPress / Ghost) */}
+              <aside className="bg-white rounded-2xl border border-black/5 shadow-xs overflow-hidden space-y-5 p-5">
+                {/* Acciones de publicación */}
+                <div className="grid grid-cols-2 gap-2">
+                  <button type="button" onClick={() => handleSavePost("draft")} className="btn btn-ghost !py-2.5 !px-3 justify-center text-xs">
+                    Guardar borrador
+                  </button>
+                  <button type="button" onClick={() => handleSavePost("published")} className="btn btn-primary !py-2.5 !px-3 justify-center text-xs">
+                    Publicar ahora
+                  </button>
+                </div>
+
+                {/* Pestañas Documento / SEO */}
+                <div className="grid grid-cols-2 gap-1 p-1 rounded-xl bg-bone text-xs font-semibold">
+                  <button type="button" onClick={() => setInspectorTab("doc")} className={`py-2 rounded-lg ${inspectorTab === "doc" ? "bg-white shadow-xs text-graphite" : "text-graphite/55"}`}>
+                    Documento
+                  </button>
+                  <button type="button" onClick={() => setInspectorTab("seo")} className={`py-2 rounded-lg ${inspectorTab === "seo" ? "bg-white shadow-xs text-graphite" : "text-graphite/55"}`}>
+                    SEO &amp; Google
+                  </button>
+                </div>
+
+                {inspectorTab === "doc" ? (
+                  <div className="space-y-4 text-xs">
+                    <div>
+                      <label className="block font-semibold mb-1.5">Categoría</label>
+                      <select value={tag} onChange={(e) => setTag(e.target.value)} className="input !py-2 text-xs">
+                        <option>Formación</option>
+                        <option>Congreso</option>
+                        <option>Novedad técnica</option>
+                        <option>Actualidad científica</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block font-semibold mb-1.5">Fecha o convocatoria</label>
+                      <input value={date} onChange={(e) => setDate(e.target.value)} placeholder="Ej. Marzo 2027" className="input !py-2 text-xs" />
+                    </div>
+                    <div>
+                      <label className="block font-semibold mb-1.5">Imagen destacada</label>
+                      {coverImg && (
+                        <div className="relative rounded-xl overflow-hidden mb-2 h-32 border border-black/10">
+                          <img src={coverImg} alt="" className="w-full h-full object-cover" />
+                          <button type="button" onClick={() => setCoverImg("")} className="absolute top-2 right-2 bg-black/70 text-white text-[10px] px-2 py-1 rounded">Quitar</button>
+                        </div>
+                      )}
+                      <label className="flex items-center justify-center gap-2 px-3 py-3 rounded-xl border border-dashed border-black/20 hover:border-amber cursor-pointer bg-bone/60">
+                        <Upload className="w-4 h-4 text-amber" />
+                        <span>{coverImg ? "Cambiar imagen" : "Subir imagen destacada"}</span>
+                        <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
+                      </label>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-4 text-xs">
+                    <div>
+                      <label className="block font-semibold mb-1.5">Slug URL</label>
+                      <input value={slug} onChange={(e) => setSlug(toSlug(e.target.value))} placeholder="url-amigable" className="input !py-2 text-xs font-mono" />
+                    </div>
+                    <div>
+                      <div className="flex justify-between mb-1.5">
+                        <label className="font-semibold">Meta Title</label>
+                        <span className={(metaTitle || title).length > 60 ? "text-rose-600 font-bold" : "text-graphite/45"}>{(metaTitle || title).length}/60</span>
+                      </div>
+                      <input value={metaTitle} onChange={(e) => setMetaTitle(e.target.value)} placeholder={title || "Título en Google"} className="input !py-2 text-xs" />
+                    </div>
+                    <div>
+                      <div className="flex justify-between mb-1.5">
+                        <label className="font-semibold">Meta Description</label>
+                        <span className={metaDesc.length > 160 ? "text-rose-600 font-bold" : "text-graphite/45"}>{metaDesc.length}/160</span>
+                      </div>
+                      <textarea rows={3} value={metaDesc} onChange={(e) => setMetaDesc(e.target.value)} placeholder="Descripción breve para buscadores e IA..." className="input !py-2 text-xs" />
+                    </div>
+
+                    {/* Vista previa SERP Google */}
+                    <div className="p-3.5 rounded-xl bg-bone border border-black/10 space-y-1">
+                      <p className="text-[10px] uppercase tracking-wider text-graphite/45 font-bold mb-1">Vista previa en Google</p>
+                      <p className="text-[11px] text-emerald-700 truncate">tcdortodoncia.com › formacion › {slug || "articulo"}</p>
+                      <p className="text-sm font-semibold text-blue-700 leading-snug line-clamp-1">{metaTitle || title || "Título de la publicación · TCD Ortodoncia"}</p>
+                      <p className="text-[11px] text-graphite/65 line-clamp-2">{metaDesc || "Resumen optimizado para que doctores y buscadores encuentren el curso o artículo."}</p>
+                    </div>
+                  </div>
+                )}
+              </aside>
             </div>
           )}
 
@@ -449,16 +542,14 @@ export default function AdminPage() {
                 <div>
                   <h2 className="font-display text-lg">Fuentes RSS conectadas (sin competencia directa)</h2>
                   <p className="text-xs text-graphite/60 mt-1">
-                    Filtrado semanal de <strong>PubMed Ortodoncia</strong>, <strong>SEDO</strong> y <strong>Sleep Medicine</strong>. Con envío de resumen previo por email a <code>alberto@tcdortodoncia.com</code> antes de publicar.
+                    Lectura semanal de <strong>PubMed Ortodoncia</strong>, <strong>SEDO</strong> y <strong>Sleep Medicine Reviews</strong>. Envío de resumen por correo a <code>alberto@tcdortodoncia.com</code> antes de publicar.
                   </p>
                 </div>
-                <span className="px-3 py-1.5 rounded-full bg-emerald-100 text-emerald-800 text-xs font-semibold shrink-0">Filtro activo ✓</span>
+                <span className="px-3 py-1.5 rounded-full bg-emerald-100 text-emerald-800 text-xs font-semibold shrink-0">Cron RSS activo ✓</span>
               </div>
 
               {rssQueue.length === 0 ? (
-                <div className="bg-white rounded-2xl p-10 text-center text-sm text-graphite/60 border border-black/5">
-                  No quedan artículos pendientes de revisar en esta cola.
-                </div>
+                <div className="bg-white rounded-2xl p-10 text-center text-sm text-graphite/60 border border-black/5">No quedan artículos pendientes de revisar.</div>
               ) : (
                 <div className="space-y-4">
                   {rssQueue.map((item) => (
@@ -473,7 +564,7 @@ export default function AdminPage() {
                       </div>
                       <div className="flex flex-wrap gap-2 shrink-0">
                         <button onClick={() => approveRss(item)} className="btn btn-primary !py-2 !px-4 text-xs">Aprobar y publicar</button>
-                        <button onClick={() => editRssInWysiwyg(item)} className="btn btn-ghost !py-2 !px-4 text-xs">Editar antes</button>
+                        <button onClick={() => editRssInEditor(item)} className="btn btn-ghost !py-2 !px-4 text-xs">Abrir en Editor</button>
                         <button onClick={() => setRssQueue((q) => q.filter((x) => x.id !== item.id))} className="px-3 py-2 text-xs text-rose-600 hover:bg-rose-50 rounded-full">Descartar</button>
                       </div>
                     </div>
@@ -483,7 +574,56 @@ export default function AdminPage() {
             </div>
           )}
 
-          {/* 4. VALIDACIÓN DE CLÍNICAS Y AVISOS POR EMAIL */}
+          {/* 4. BANDEJA DE CASOS Y RECOGIDAS */}
+          {section === "cases" && (
+            <div className="bg-white rounded-2xl border border-black/5 overflow-x-auto">
+              <div className="px-6 py-4 border-b border-black/5 flex items-center justify-between">
+                <div>
+                  <h2 className="font-display text-lg">Casos digitales y recogidas recibidas</h2>
+                  <p className="text-xs text-graphite/55">Enrutados automáticamente por sede (Santander / Las Palmas).</p>
+                </div>
+              </div>
+              <table className="w-full text-left text-sm">
+                <thead className="bg-bone text-xs uppercase tracking-wider text-graphite/55 border-b border-black/5">
+                  <tr>
+                    <th className="px-5 py-3.5">Ref.</th>
+                    <th className="px-5 py-3.5">Clínica / Doctor</th>
+                    <th className="px-5 py-3.5">Aparato / Entrada</th>
+                    <th className="px-5 py-3.5">Sede</th>
+                    <th className="px-5 py-3.5">Estado</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-black/5">
+                  {cases.map((c) => (
+                    <tr key={c.id}>
+                      <td className="px-5 py-4 font-mono text-xs font-bold">{c.id}<div className="font-sans font-normal text-graphite/45">{c.date}</div></td>
+                      <td className="px-5 py-4"><p className="font-semibold">{c.clinic}</p><p className="text-xs text-graphite/55">{c.doctor}</p></td>
+                      <td className="px-5 py-4"><p className="font-medium">{c.product}</p><p className="text-xs text-graphite/50">{c.type}</p></td>
+                      <td className="px-5 py-4 text-xs font-semibold">{c.lab}</td>
+                      <td className="px-5 py-4">
+                        <select
+                          value={c.stage}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setCases((list) => list.map((x) => x.id === c.id ? { ...x, stage: val } : x));
+                            showToast(`Caso ${c.id} actualizado a "${val}".`);
+                          }}
+                          className="text-xs font-semibold rounded-full px-3 py-1.5 bg-bone border border-black/10 outline-none"
+                        >
+                          <option>Recibido</option>
+                          <option>En diseño CAD</option>
+                          <option>Producción 8h</option>
+                          <option>Enviado</option>
+                        </select>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* 5. VALIDACIÓN DE CLÍNICAS Y AVISOS POR EMAIL */}
           {section === "clinics" && (
             <div className="space-y-5">
               <div className="bg-white rounded-2xl p-5 border border-black/5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -491,7 +631,7 @@ export default function AdminPage() {
                   <Shield className="w-5 h-5 text-amber shrink-0 mt-0.5" />
                   <div>
                     <p className="font-semibold text-sm">Notificación automática por correo electrónico</p>
-                    <p className="text-xs text-graphite/60">Cuando una clínica se registra recibís aviso en administración, y al autorizarla se le envía su correo de bienvenida con acceso a tarifas.</p>
+                    <p className="text-xs text-graphite/60">Al autorizar una clínica nueva se le envía automáticamente su correo de bienvenida con acceso a tarifas privadas.</p>
                   </div>
                 </div>
                 <label className="flex items-center gap-2 text-xs font-semibold shrink-0 cursor-pointer">
