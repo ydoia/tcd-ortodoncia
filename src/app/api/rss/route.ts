@@ -92,7 +92,7 @@ export async function GET() {
           source: decodeEntities(source),
           date: formattedDate,
           title: cleanTitle,
-          summary: `Noticia del sector odontológico recogida automáticamente desde ${decodeEntities(source)} sin menciones a competencia directa.`,
+          summary: `Artículo de actualidad odontológica publicado en ${decodeEntities(source)}, seleccionado para actualización clínica.`,
           url: decodeEntities(rawLink),
         });
       }
