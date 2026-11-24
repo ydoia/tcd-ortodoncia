@@ -19,7 +19,7 @@ export type AutoNews = { id: string; source: string; date: string; title: string
 export type PendingClinic = { id: string; clinic: string; doctor: string; email: string; dni: string; colegiado: string; lab: string; approved: boolean };
 export type LabCase = { id: string; clinic: string; doctor: string; product: string; type: string; lab: string; date: string; stage: string };
 
-export const BACKOFFICE_STORAGE_KEY = "tcd_backoffice_v3";
+export const BACKOFFICE_STORAGE_KEY = "tcd_backoffice_v4";
 
 export const INITIAL_POSTS: BackofficePost[] = [
   {
@@ -32,6 +32,7 @@ export const INITIAL_POSTS: BackofficePost[] = [
     metaTitle: "Taller MARPE y Flujo Digital 3D · TCD Ortodoncia",
     metaDesc: "Formación práctica para ortodoncistas sobre alineación CBCT + STL y férulas guiadas.",
     html: "<p>Sesión clínica presencial y online para equipos de ortodoncia. Revisaremos alineación de escaneado intraoral con CBCT y diseño de férulas de inserción guiada.</p>",
+    image: "/assets/tcd/aparatologia-sobre-micro-implantes.jpg",
     status: "published",
   },
   {
@@ -44,6 +45,7 @@ export const INITIAL_POSTS: BackofficePost[] = [
     metaTitle: "Talleres y Congresos · TCD Ortodoncia",
     metaDesc: "Flujos digitales completos desde escaneado intraoral y dispositivos de apnea.",
     html: "<p>Presentación de flujos digitales completos desde escaneado intraoral, cementado 3D y dispositivos intraorales de apnea D.A.M.A. TCD®.</p>",
+    image: "/assets/tcd/laboratorio-tcd.jpg",
     status: "published",
   },
   {
@@ -56,6 +58,7 @@ export const INITIAL_POSTS: BackofficePost[] = [
     metaTitle: "Curso D.A.M.A. TCD® · Apnea del Sueño",
     metaDesc: "Protocolo clínico y toma de registro constructivo para dispositivos intraorales.",
     html: "<p>Pendiente de confirmar fechas definitivas con el ponente y adjuntar programa en PDF.</p>",
+    image: "/assets/tcd/lateral.jpg",
     status: "draft",
   },
   {
@@ -68,6 +71,7 @@ export const INITIAL_POSTS: BackofficePost[] = [
     metaTitle: "Cementado Indirecto 3D · TCD Ortodoncia",
     metaDesc: "Guías de inserción compatibles con 3M APC Flash-Free.",
     html: "<p>Guías de inserción de alta precisión compatibles con <strong>3M APC Flash-Free</strong> y cualquier sistema de brackets del mercado.</p>",
+    image: "/assets/tcd/IBT-02.jpg",
     status: "published",
   },
   {
@@ -80,6 +84,7 @@ export const INITIAL_POSTS: BackofficePost[] = [
     metaTitle: "Nylon PA12 y Resina High Torque · TCD Ortodoncia",
     metaDesc: "Nuevas resinas con memoria elástica y dispositivos DDBG en nylon biocompatible.",
     html: "<p>Incorporamos nuevas resinas con memoria elástica y dispositivos DDBG en nylon biocompatible regulable en protrusión.</p>",
+    image: "/assets/tcd/IMG_9362-scaled.jpg",
     status: "published",
   },
 ];

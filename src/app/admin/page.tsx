@@ -7,7 +7,10 @@ import {
   BackofficePost, PostKind, PostStatus, AutoNews, PendingClinic, LabCase,
   BACKOFFICE_STORAGE_KEY, INITIAL_POSTS, INITIAL_RSS, INITIAL_CASES, INITIAL_CLINICS, toSlug,
 } from "@/lib/backoffice";
-import { Grad, Spark, Plus, Lock, Check, Arrow, File, Upload, Shield, User, Cube } from "@/components/Icons";
+import {
+  Grad, Spark, Plus, Lock, Check, Arrow, File, Upload, Shield, User, Cube,
+  ListIcon, EditIcon, TrashIcon, EyeIcon, RssIcon, MailIcon, Search,
+} from "@/components/Icons";
 
 type Section = "overview" | "courses" | "news" | "cases" | "clinics";
 type CourseTab = "list" | "editor";
@@ -31,7 +34,7 @@ export default function AdminPage() {
   const [notifyOnApprove, setNotifyOnApprove] = useState(true);
   const [toast, setToast] = useState<string | null>(null);
 
-  // Estado compartido del Editor Tiptap + Inspector derecho
+  // Editor state
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editorKind, setEditorKind] = useState<PostKind>("course");
   const [title, setTitle] = useState("");
@@ -150,6 +153,7 @@ export default function AdminPage() {
       metaTitle: item.title,
       metaDesc: item.summary,
       html: `<p>${item.summary}</p>`,
+      image: "/assets/tcd/laboratorio-tcd.jpg",
       status: "published",
     };
     savePosts([p, ...posts]);
@@ -164,7 +168,7 @@ export default function AdminPage() {
     setSlug(toSlug(item.title));
     setTag("Actualidad científica");
     setDate(item.source);
-    setCoverImg("");
+    setCoverImg("/assets/tcd/laboratorio-tcd.jpg");
     setHtml(`<p>${item.summary}</p>`);
     setMetaTitle(item.title);
     setMetaDesc(item.summary);
@@ -192,37 +196,37 @@ export default function AdminPage() {
             <LogoMark className="h-6" />
             <span className="font-display font-bold tracking-tight text-lg">TCD <span className="text-white/40 font-normal text-xs tracking-[0.22em] ml-1">BACKOFFICE</span></span>
           </div>
-          <Link href="/" className="text-xs text-white/50 hover:text-amber transition-colors">← Volver a web pública</Link>
+          <Link href="/" className="text-sm text-white/60 hover:text-amber transition-colors">← Volver a web pública</Link>
         </div>
 
         <div className="relative z-10 max-w-md w-full mx-auto bg-[#161a20] border border-white/10 rounded-3xl p-8 sm:p-10 shadow-2xl space-y-6">
-          <div className="flex items-center gap-3">
-            <span className="w-11 h-11 rounded-2xl bg-amber text-graphite grid place-items-center shrink-0"><Lock className="w-5 h-5" /></span>
+          <div className="flex items-center gap-3.5">
+            <span className="w-12 h-12 rounded-2xl bg-amber text-graphite grid place-items-center shrink-0"><Lock className="w-5 h-5" /></span>
             <div>
               <h1 className="font-display text-2xl leading-none">Administración TCD</h1>
-              <p className="text-white/50 text-xs mt-1">Acceso privado para dirección y equipo</p>
+              <p className="text-white/55 text-sm mt-1">Acceso privado para dirección y equipo</p>
             </div>
           </div>
 
           <form onSubmit={(e) => { e.preventDefault(); setUnlocked(true); }} className="space-y-4">
             <div>
-              <label className="block text-xs font-semibold text-white/70 mb-1.5">Correo de administrador</label>
+              <label className="block text-sm font-medium text-white/75 mb-1.5">Correo de administrador</label>
               <input required type="email" value={emailInput} onChange={(e) => setEmailInput(e.target.value)} className="input input-dark text-sm" />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-white/70 mb-1.5">Contraseña</label>
+              <label className="block text-sm font-medium text-white/75 mb-1.5">Contraseña</label>
               <input type="password" value={passInput} onChange={(e) => setPassInput(e.target.value)} placeholder="••••••••" className="input input-dark text-sm" />
             </div>
-            <button type="submit" className="btn btn-primary w-full justify-center text-sm">Acceder al panel privado<Arrow /></button>
+            <button type="submit" className="btn btn-primary w-full justify-center">Acceder al panel privado<Arrow /></button>
           </form>
 
-          <div className="pt-4 border-t border-white/10 flex items-center justify-between text-xs text-white/45">
+          <div className="pt-4 border-t border-white/10 flex items-center justify-between text-xs text-white/50">
             <span>Entorno de demostración</span>
             <button type="button" onClick={() => setUnlocked(true)} className="text-amber font-semibold hover:underline">Entrar directo (Demo) →</button>
           </div>
         </div>
 
-        <p className="relative z-10 text-center text-[11px] text-white/30">SIKKER SVAR S.L. · Uso interno exclusivo</p>
+        <p className="relative z-10 text-center text-xs text-white/35">SIKKER SVAR S.L. · Uso interno exclusivo</p>
       </div>
     );
   }
@@ -234,50 +238,75 @@ export default function AdminPage() {
   const renderPostTable = (items: BackofficePost[], kind: PostKind) => {
     const filtered = items.filter((p) => statusFilter === "all" || p.status === statusFilter);
     return (
-      <div className="bg-white rounded-2xl border border-black/5 shadow-xs overflow-hidden">
-        <div className="px-6 py-4 border-b border-black/5 flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
+      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
+        <div className="px-6 py-4 bg-slate-50/70 border-b border-slate-200/80 flex flex-wrap items-center justify-between gap-4">
+          <div className="flex items-center gap-1.5">
             {([["all", "Todos"], ["published", "Publicados"], ["draft", "Borradores"]] as const).map(([k, lbl]) => (
               <button
                 key={k}
                 onClick={() => setStatusFilter(k)}
-                className={`px-3.5 py-1.5 rounded-full text-xs font-semibold ${statusFilter === k ? "bg-graphite text-white" : "bg-bone text-graphite/65 hover:text-graphite"}`}
+                className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${statusFilter === k ? "bg-white text-graphite shadow-xs ring-1 ring-slate-200" : "text-slate-500 hover:text-graphite"}`}
               >
                 {lbl}
               </button>
             ))}
           </div>
-          <button onClick={() => startNewInEditor(kind)} className="btn btn-primary !py-2 !px-4 text-xs">
-            <Plus className="w-3.5 h-3.5" />{kind === "course" ? "Nuevo curso" : "Nueva noticia"}
+          <button onClick={() => startNewInEditor(kind)} className="btn btn-primary !py-2 !px-4 text-sm">
+            <Plus className="w-4 h-4" />{kind === "course" ? "Nuevo curso" : "Nueva noticia"}
           </button>
         </div>
 
-        <div className="divide-y divide-black/5">
+        <div className="divide-y divide-slate-100">
           {filtered.length === 0 ? (
-            <div className="p-8 text-center text-xs text-graphite/50">No hay elementos en este filtro.</div>
+            <div className="p-10 text-center text-sm text-slate-500">No hay elementos en este filtro.</div>
           ) : (
             filtered.map((p) => (
-              <div key={p.id} className="px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-[#fafbfc]">
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2 text-xs">
-                    <span className="px-2.5 py-0.5 rounded-full bg-bone font-semibold">{p.tag}</span>
-                    <span className="text-graphite/45">{p.date}</span>
-                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${p.status === "published" ? "bg-emerald-100 text-emerald-700" : "bg-amber/25 text-amber-900"}`}>
-                      {p.status === "published" ? "Publicado" : "Borrador"}
-                    </span>
+              <div key={p.id} className="px-6 py-5 flex flex-col md:flex-row md:items-center justify-between gap-5 hover:bg-slate-50/60 transition-colors">
+                <div className="flex items-start gap-4 min-w-0">
+                  {/* Miniatura izquierda */}
+                  {p.image ? (
+                    <img src={p.image} alt={p.title} className="w-20 h-14 rounded-xl object-cover shrink-0 border border-slate-200" />
+                  ) : (
+                    <div className="w-20 h-14 rounded-xl bg-slate-100 text-slate-400 grid place-items-center shrink-0 border border-slate-200">
+                      {kind === "course" ? <Grad className="w-5 h-5" /> : <Spark className="w-5 h-5" />}
+                    </div>
+                  )}
+
+                  <div className="min-w-0 space-y-1">
+                    <div className="flex flex-wrap items-center gap-2 text-xs">
+                      <span className="px-2.5 py-0.5 rounded-md bg-slate-100 text-slate-700 font-medium">{p.tag}</span>
+                      <span className="text-slate-400">·</span>
+                      <span className="text-slate-500">{p.date}</span>
+                      <span className={`ml-1 inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium ${p.status === "published" ? "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200/70" : "bg-slate-100 text-slate-600 ring-1 ring-slate-200"}`}>
+                        <span className={`w-1.5 h-1.5 rounded-full ${p.status === "published" ? "bg-emerald-500" : "bg-slate-400"}`} />
+                        {p.status === "published" ? "Publicado" : "Borrador"}
+                      </span>
+                    </div>
+                    <h3 className="font-display font-semibold text-[15px] text-graphite leading-snug">{p.title}</h3>
+                    <p className="text-xs font-mono text-slate-400 truncate">/formacion/{p.slug}</p>
                   </div>
-                  <p className="font-semibold text-sm">{p.title}</p>
-                  <p className="text-[11px] font-mono text-graphite/40">/formacion/{p.slug}</p>
                 </div>
-                <div className="flex items-center gap-2 shrink-0 text-xs">
-                  <button onClick={() => openInEditor(p)} className="px-3 py-1.5 rounded-lg bg-bone hover:bg-amber/20 font-semibold">Editar</button>
+
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    onClick={() => openInEditor(p)}
+                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-white border border-slate-200 hover:border-slate-300 text-slate-700 text-xs font-semibold transition-colors"
+                  >
+                    <EditIcon className="w-3.5 h-3.5" />Editar
+                  </button>
                   <button
                     onClick={() => savePosts(posts.map((x) => x.id === p.id ? { ...x, status: x.status === "published" ? "draft" : "published" } : x))}
-                    className="px-3 py-1.5 rounded-lg border border-black/10 hover:bg-bone font-medium"
+                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-white border border-slate-200 hover:border-slate-300 text-slate-600 text-xs font-medium transition-colors"
                   >
-                    {p.status === "published" ? "Pasar a borrador" : "Publicar"}
+                    <EyeIcon className="w-3.5 h-3.5" />{p.status === "published" ? "Ocultar" : "Publicar"}
                   </button>
-                  <button onClick={() => savePosts(posts.filter((x) => x.id !== p.id))} className="px-3 py-1.5 rounded-lg text-rose-600 hover:bg-rose-50 font-medium">Eliminar</button>
+                  <button
+                    onClick={() => savePosts(posts.filter((x) => x.id !== p.id))}
+                    title="Eliminar"
+                    className="p-2 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
+                  >
+                    <TrashIcon className="w-4 h-4" />
+                  </button>
                 </div>
               </div>
             ))
@@ -288,9 +317,9 @@ export default function AdminPage() {
   };
 
   const renderWysiwyg = (kind: PostKind) => (
-    <div className="grid lg:grid-cols-[1fr_340px] gap-6 items-start">
-      <div className="space-y-4 min-w-0">
-        <div className="bg-white rounded-2xl p-6 border border-black/5 shadow-xs">
+    <div className="grid lg:grid-cols-[1fr_350px] gap-6 items-start">
+      <div className="space-y-5 min-w-0">
+        <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-xs">
           <input
             value={title}
             onChange={(e) => {
@@ -298,32 +327,36 @@ export default function AdminPage() {
               if (!editingId) setSlug(toSlug(e.target.value));
             }}
             placeholder={kind === "course" ? "Título del curso o taller…" : "Titular de la noticia…"}
-            className="w-full font-display text-2xl sm:text-3xl font-bold outline-none placeholder:text-graphite/25"
+            className="w-full font-display text-2xl sm:text-3xl font-bold outline-none placeholder:text-slate-300"
           />
-          <p className="text-[11px] font-mono text-graphite/40 mt-2">
-            URL: https://tcdortodoncia.com/formacion/<span className="text-graphite/80">{slug || toSlug(title) || "nueva-entrada"}</span>
+          <p className="text-xs font-mono text-slate-400 mt-2.5">
+            URL pública: https://tcdortodoncia.com/formacion/<span className="text-slate-700">{slug || toSlug(title) || "nueva-entrada"}</span>
           </p>
         </div>
 
         <RichEditor value={html} onChange={setHtml} />
       </div>
 
-      <aside className="bg-white rounded-2xl border border-black/5 shadow-xs overflow-hidden space-y-5 p-5">
-        <div className="grid grid-cols-2 gap-2">
-          <button type="button" onClick={() => handleSavePost("draft")} className="btn btn-ghost !py-2.5 !px-3 justify-center text-xs">Guardar borrador</button>
-          <button type="button" onClick={() => handleSavePost("published")} className="btn btn-primary !py-2.5 !px-3 justify-center text-xs">Publicar ahora</button>
+      <aside className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden space-y-5 p-6">
+        <div className="grid grid-cols-2 gap-2.5">
+          <button type="button" onClick={() => handleSavePost("draft")} className="btn btn-ghost !py-2.5 !px-3 justify-center text-sm">Guardar borrador</button>
+          <button type="button" onClick={() => handleSavePost("published")} className="btn btn-primary !py-2.5 !px-3 justify-center text-sm">Publicar</button>
         </div>
 
-        <div className="grid grid-cols-2 gap-1 p-1 rounded-xl bg-bone text-xs font-semibold">
-          <button type="button" onClick={() => setInspectorTab("doc")} className={`py-2 rounded-lg ${inspectorTab === "doc" ? "bg-white shadow-xs text-graphite" : "text-graphite/55"}`}>Documento</button>
-          <button type="button" onClick={() => setInspectorTab("seo")} className={`py-2 rounded-lg ${inspectorTab === "seo" ? "bg-white shadow-xs text-graphite" : "text-graphite/55"}`}>SEO &amp; Google</button>
+        <div className="grid grid-cols-2 gap-1 p-1 rounded-xl bg-slate-100 text-xs font-semibold">
+          <button type="button" onClick={() => setInspectorTab("doc")} className={`py-2 rounded-lg flex items-center justify-center gap-1.5 ${inspectorTab === "doc" ? "bg-white shadow-xs text-graphite" : "text-slate-500"}`}>
+            <File className="w-3.5 h-3.5" />Documento
+          </button>
+          <button type="button" onClick={() => setInspectorTab("seo")} className={`py-2 rounded-lg flex items-center justify-center gap-1.5 ${inspectorTab === "seo" ? "bg-white shadow-xs text-graphite" : "text-slate-500"}`}>
+            <Search className="w-3.5 h-3.5" />SEO &amp; Google
+          </button>
         </div>
 
         {inspectorTab === "doc" ? (
-          <div className="space-y-4 text-xs">
+          <div className="space-y-4 text-sm">
             <div>
-              <label className="block font-semibold mb-1.5">Categoría</label>
-              <select value={tag} onChange={(e) => setTag(e.target.value)} className="input !py-2 text-xs">
+              <label className="block text-xs font-semibold text-slate-600 mb-1.5">Categoría</label>
+              <select value={tag} onChange={(e) => setTag(e.target.value)} className="input !py-2.5 text-sm">
                 {kind === "course" ? (
                   <>
                     <option>Formación</option>
@@ -340,18 +373,18 @@ export default function AdminPage() {
               </select>
             </div>
             <div>
-              <label className="block font-semibold mb-1.5">Fecha o convocatoria</label>
-              <input value={date} onChange={(e) => setDate(e.target.value)} placeholder="Ej. Marzo 2027" className="input !py-2 text-xs" />
+              <label className="block text-xs font-semibold text-slate-600 mb-1.5">Fecha o convocatoria</label>
+              <input value={date} onChange={(e) => setDate(e.target.value)} placeholder="Ej. Marzo 2027" className="input !py-2.5 text-sm" />
             </div>
             <div>
-              <label className="block font-semibold mb-1.5">Imagen destacada</label>
+              <label className="block text-xs font-semibold text-slate-600 mb-1.5">Imagen destacada</label>
               {coverImg && (
-                <div className="relative rounded-xl overflow-hidden mb-2 h-32 border border-black/10">
+                <div className="relative rounded-xl overflow-hidden mb-2.5 h-36 border border-slate-200">
                   <img src={coverImg} alt="" className="w-full h-full object-cover" />
-                  <button type="button" onClick={() => setCoverImg("")} className="absolute top-2 right-2 bg-black/70 text-white text-[10px] px-2 py-1 rounded">Quitar</button>
+                  <button type="button" onClick={() => setCoverImg("")} className="absolute top-2 right-2 bg-black/75 text-white text-xs px-2.5 py-1 rounded-lg">Quitar</button>
                 </div>
               )}
-              <label className="flex items-center justify-center gap-2 px-3 py-3 rounded-xl border border-dashed border-black/20 hover:border-amber cursor-pointer bg-bone/60">
+              <label className="flex items-center justify-center gap-2 px-4 py-3.5 rounded-xl border border-dashed border-slate-300 hover:border-amber cursor-pointer bg-slate-50 text-xs font-medium text-slate-600">
                 <Upload className="w-4 h-4 text-amber" />
                 <span>{coverImg ? "Cambiar imagen" : "Subir imagen destacada"}</span>
                 <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
@@ -359,30 +392,30 @@ export default function AdminPage() {
             </div>
           </div>
         ) : (
-          <div className="space-y-4 text-xs">
+          <div className="space-y-4 text-sm">
             <div>
-              <label className="block font-semibold mb-1.5">Slug URL</label>
+              <label className="block text-xs font-semibold text-slate-600 mb-1.5">Slug URL</label>
               <input value={slug} onChange={(e) => setSlug(toSlug(e.target.value))} placeholder="url-amigable" className="input !py-2 text-xs font-mono" />
             </div>
             <div>
-              <div className="flex justify-between mb-1.5">
-                <label className="font-semibold">Meta Title</label>
-                <span className={(metaTitle || title).length > 60 ? "text-rose-600 font-bold" : "text-graphite/45"}>{(metaTitle || title).length}/60</span>
+              <div className="flex justify-between text-xs mb-1.5">
+                <label className="font-semibold text-slate-600">Meta Title</label>
+                <span className={(metaTitle || title).length > 60 ? "text-rose-600 font-bold" : "text-slate-400"}>{(metaTitle || title).length}/60</span>
               </div>
-              <input value={metaTitle} onChange={(e) => setMetaTitle(e.target.value)} placeholder={title || "Título en Google"} className="input !py-2 text-xs" />
+              <input value={metaTitle} onChange={(e) => setMetaTitle(e.target.value)} placeholder={title || "Título en Google"} className="input !py-2 text-sm" />
             </div>
             <div>
-              <div className="flex justify-between mb-1.5">
-                <label className="font-semibold">Meta Description</label>
-                <span className={metaDesc.length > 160 ? "text-rose-600 font-bold" : "text-graphite/45"}>{metaDesc.length}/160</span>
+              <div className="flex justify-between text-xs mb-1.5">
+                <label className="font-semibold text-slate-600">Meta Description</label>
+                <span className={metaDesc.length > 160 ? "text-rose-600 font-bold" : "text-slate-400"}>{metaDesc.length}/160</span>
               </div>
-              <textarea rows={3} value={metaDesc} onChange={(e) => setMetaDesc(e.target.value)} placeholder="Descripción para buscadores e IA..." className="input !py-2 text-xs" />
+              <textarea rows={3} value={metaDesc} onChange={(e) => setMetaDesc(e.target.value)} placeholder="Descripción para buscadores e IA..." className="input !py-2 text-sm" />
             </div>
-            <div className="p-3.5 rounded-xl bg-bone border border-black/10 space-y-1">
-              <p className="text-[10px] uppercase tracking-wider text-graphite/45 font-bold mb-1">Vista previa en Google</p>
-              <p className="text-[11px] text-emerald-700 truncate">tcdortodoncia.com › formacion › {slug || "articulo"}</p>
+            <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
+              <p className="text-[11px] uppercase tracking-wider text-slate-400 font-bold mb-1">Vista previa en Google</p>
+              <p className="text-xs text-emerald-700 truncate">tcdortodoncia.com › formacion › {slug || "articulo"}</p>
               <p className="text-sm font-semibold text-blue-700 leading-snug line-clamp-1">{metaTitle || title || "Título · TCD Ortodoncia"}</p>
-              <p className="text-[11px] text-graphite/65 line-clamp-2">{metaDesc || "Resumen optimizado para buscadores."}</p>
+              <p className="text-xs text-slate-600 line-clamp-2">{metaDesc || "Resumen optimizado para buscadores."}</p>
             </div>
           </div>
         )}
@@ -391,21 +424,21 @@ export default function AdminPage() {
   );
 
   return (
-    <div className="min-h-screen bg-[#f2f4f7] text-graphite flex flex-col lg:flex-row">
+    <div className="min-h-screen bg-[#f6f7f9] text-graphite flex flex-col lg:flex-row">
       {toast && (
-        <div className="fixed top-5 right-5 z-50 bg-graphite text-white px-5 py-3 rounded-2xl shadow-2xl border border-amber/40 text-xs font-semibold flex items-center gap-2.5">
-          <span className="w-5 h-5 rounded-full bg-emerald-500 text-white grid place-items-center"><Check className="w-3 h-3" /></span>
+        <div className="fixed top-5 right-5 z-50 bg-graphite text-white px-5 py-3.5 rounded-2xl shadow-2xl border border-amber/40 text-sm font-medium flex items-center gap-2.5">
+          <span className="w-5 h-5 rounded-full bg-emerald-500 text-white grid place-items-center"><Check className="w-3.5 h-3.5" /></span>
           {toast}
         </div>
       )}
 
-      {/* SIDEBAR COHERENTE */}
-      <aside className="lg:w-64 bg-[#12151a] text-white flex flex-col shrink-0 border-r border-white/5">
+      {/* SIDEBAR */}
+      <aside className="lg:w-68 bg-[#12151a] text-white flex flex-col shrink-0 border-r border-white/5">
         <div className="p-6 border-b border-white/10 flex items-center gap-3">
           <LogoMark className="h-5" />
           <div>
             <p className="font-display font-bold text-sm leading-none">TCD BACKOFFICE</p>
-            <p className="text-[10px] text-amber tracking-[0.18em] uppercase mt-1">Gestión interna</p>
+            <p className="text-[11px] text-amber tracking-[0.16em] uppercase mt-1">Gestión interna</p>
           </div>
         </div>
 
@@ -422,11 +455,11 @@ export default function AdminPage() {
               <button
                 key={item.id}
                 onClick={() => setSection(item.id as Section)}
-                className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-xs font-semibold transition-all ${active ? "bg-amber text-graphite shadow" : "text-white/65 hover:bg-white/5 hover:text-white"}`}
+                className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium transition-all ${active ? "bg-amber text-graphite font-semibold shadow" : "text-white/70 hover:bg-white/5 hover:text-white"}`}
               >
                 <span className="flex items-center gap-3">{item.icon}{item.label}</span>
                 {item.badge ? (
-                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${active ? "bg-graphite text-white" : "bg-amber/20 text-amber"}`}>
+                  <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${active ? "bg-graphite text-white" : "bg-white/10 text-white/80"}`}>
                     {item.badge}
                   </span>
                 ) : null}
@@ -435,65 +468,73 @@ export default function AdminPage() {
           })}
         </nav>
 
-        <div className="p-4 border-t border-white/10 space-y-2 text-xs">
-          <Link href="/formacion" target="_blank" className="flex items-center justify-between px-3 py-2 rounded-lg text-white/60 hover:bg-white/5 hover:text-white">
-            <span>Ver Formación / Noticias</span><span>↗</span>
+        <div className="p-4 border-t border-white/10 space-y-2 text-sm">
+          <Link href="/formacion" target="_blank" className="flex items-center justify-between px-3 py-2 rounded-lg text-white/65 hover:bg-white/5 hover:text-white">
+            <span>Ver Formación pública</span><span>↗</span>
           </Link>
           <button onClick={() => setUnlocked(false)} className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-rose-400 hover:bg-rose-500/10">
-            <Lock className="w-3.5 h-3.5" />Cerrar sesión
+            <Lock className="w-4 h-4" />Cerrar sesión
           </button>
         </div>
       </aside>
 
-      {/* ÁREA DE TRABAJO */}
+      {/* CONTENIDO PRINCIPAL */}
       <div className="flex-1 flex flex-col min-w-0">
-        <header className="bg-white border-b border-black/5 px-6 lg:px-8 h-16 flex items-center justify-between">
-          <p className="font-display font-semibold text-base">
+        <header className="bg-white border-b border-slate-200/80 px-6 lg:px-10 h-16 flex items-center justify-between">
+          <h1 className="font-display font-semibold text-lg text-graphite">
             {section === "overview" && "Dashboard · Vista general"}
             {section === "courses" && "Cursos y Formación"}
             {section === "news" && "Noticias y Actualidad RSS"}
-            {section === "cases" && "Bandeja de prescripciones STL/DICOM y recogidas"}
-            {section === "clinics" && "Control de altas, DNI/colegiado y tarifas privadas"}
-          </p>
-          <div className="flex items-center gap-3 text-xs">
-            <span className="hidden sm:inline-block text-graphite/50">{emailInput}</span>
-            <span className="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 font-semibold">Admin activo</span>
+            {section === "cases" && "Casos digitales y recogidas"}
+            {section === "clinics" && "Validación de clínicas y tarifas"}
+          </h1>
+          <div className="flex items-center gap-3 text-sm">
+            <span className="hidden sm:inline-block text-slate-500">{emailInput}</span>
+            <span className="px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200 text-xs font-semibold">Admin activo</span>
           </div>
         </header>
 
-        <div className="p-6 lg:p-8 max-w-7xl w-full space-y-6">
-          {/* 1. DASHBOARD VISUAL CON PESTAÑAS FORMACIÓN / NOTICIAS */}
+        <div className="p-6 lg:p-10 max-w-7xl w-full space-y-8">
+          {/* 1. DASHBOARD */}
           {section === "overview" && (
             <>
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
                 {[
-                  ["Cursos publicados", coursesList.filter((p) => p.status === "published").length, `${coursesList.filter((p) => p.status === "draft").length} en borrador`],
-                  ["Noticias publicadas", newsList.filter((p) => p.status === "published").length, `${newsList.filter((p) => p.status === "draft").length} en borrador`],
-                  ["RSS pendientes", rssQueue.length, "Cron automático semanal"],
-                  ["Clínicas por validar", pendingClinicsCount, "Esperando tarifas"],
-                ].map(([lbl, val, sub]) => (
-                  <div key={String(lbl)} className="bg-white rounded-2xl p-5 border border-black/5 shadow-xs">
-                    <p className="text-xs text-graphite/55 font-medium">{lbl}</p>
-                    <p className="font-display text-3xl font-bold mt-1">{val}</p>
-                    <p className="text-[11px] text-graphite/40 mt-1">{sub}</p>
+                  { lbl: "Cursos publicados", val: coursesList.filter((p) => p.status === "published").length, sub: `${coursesList.filter((p) => p.status === "draft").length} en borrador`, icon: <Grad className="w-5 h-5" /> },
+                  { lbl: "Noticias publicadas", val: newsList.filter((p) => p.status === "published").length, sub: `${newsList.filter((p) => p.status === "draft").length} en borrador`, icon: <Spark className="w-5 h-5" /> },
+                  { lbl: "RSS pendientes", val: rssQueue.length, sub: "Cron semanal", icon: <RssIcon className="w-5 h-5" /> },
+                  { lbl: "Clínicas por validar", val: pendingClinicsCount, sub: "Esperando tarifas", icon: <User className="w-5 h-5" /> },
+                ].map((k) => (
+                  <div key={k.lbl} className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-xs flex items-start justify-between gap-4">
+                    <div>
+                      <p className="text-sm text-slate-500 font-medium">{k.lbl}</p>
+                      <p className="font-display text-3xl font-bold mt-2">{k.val}</p>
+                      <p className="text-xs text-slate-400 mt-1">{k.sub}</p>
+                    </div>
+                    <span className="w-10 h-10 rounded-xl bg-slate-100 text-slate-600 grid place-items-center shrink-0">{k.icon}</span>
                   </div>
                 ))}
               </div>
 
-              {/* Resumen visual rápido con pestañas Formación / Noticias */}
-              <div className="space-y-4">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div className="flex gap-1.5 bg-white p-1.5 rounded-full border border-black/5">
-                    <button onClick={() => setOverviewTab("course")} className={`px-4 py-1.5 rounded-full text-xs font-semibold ${overviewTab === "course" ? "bg-graphite text-white" : "text-graphite/60"}`}>
-                      Formación y Cursos ({coursesList.length})
+              <div className="space-y-5">
+                <div className="flex flex-wrap items-center justify-between gap-4">
+                  <div className="flex gap-1.5 bg-white p-1.5 rounded-xl border border-slate-200/80 shadow-xs">
+                    <button
+                      onClick={() => setOverviewTab("course")}
+                      className={`px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 transition-colors ${overviewTab === "course" ? "bg-graphite text-white" : "text-slate-600 hover:text-graphite"}`}
+                    >
+                      <Grad className="w-4 h-4" />Formación y Cursos ({coursesList.length})
                     </button>
-                    <button onClick={() => setOverviewTab("news")} className={`px-4 py-1.5 rounded-full text-xs font-semibold ${overviewTab === "news" ? "bg-graphite text-white" : "text-graphite/60"}`}>
-                      Noticias ({newsList.length})
+                    <button
+                      onClick={() => setOverviewTab("news")}
+                      className={`px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 transition-colors ${overviewTab === "news" ? "bg-graphite text-white" : "text-slate-600 hover:text-graphite"}`}
+                    >
+                      <Spark className="w-4 h-4" />Noticias ({newsList.length})
                     </button>
                   </div>
-                  <div className="flex gap-2">
-                    <button onClick={() => startNewInEditor("course")} className="btn btn-ghost !py-2 !px-3.5 text-xs">+ Nuevo curso</button>
-                    <button onClick={() => startNewInEditor("news")} className="btn btn-primary !py-2 !px-3.5 text-xs">+ Nueva noticia</button>
+                  <div className="flex gap-2.5">
+                    <button onClick={() => startNewInEditor("course")} className="btn btn-ghost !py-2.5 !px-4 text-sm"><Plus className="w-4 h-4" />Nuevo curso</button>
+                    <button onClick={() => startNewInEditor("news")} className="btn btn-primary !py-2.5 !px-4 text-sm"><Plus className="w-4 h-4" />Nueva noticia</button>
                   </div>
                 </div>
                 {renderPostTable(overviewTab === "course" ? coursesList : newsList, overviewTab)}
@@ -501,34 +542,49 @@ export default function AdminPage() {
             </>
           )}
 
-          {/* 2. APARTADO CURSOS Y FORMACIÓN (SIMÉTRICO) */}
+          {/* 2. CURSOS Y FORMACIÓN */}
           {section === "courses" && (
             <div className="space-y-6">
-              <div className="flex gap-2 border-b border-black/10 pb-3">
-                <button onClick={() => setCourseTab("list")} className={`px-4 py-2 rounded-xl text-xs font-semibold ${courseTab === "list" ? "bg-graphite text-white" : "bg-white text-graphite/65"}`}>
-                  Listado de Cursos ({coursesList.length})
+              <div className="flex flex-wrap gap-2 border-b border-slate-200 pb-4">
+                <button
+                  onClick={() => setCourseTab("list")}
+                  className={`px-4 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-2 transition-colors ${courseTab === "list" ? "bg-graphite text-white" : "bg-white text-slate-600 border border-slate-200 hover:text-graphite"}`}
+                >
+                  <ListIcon className="w-4 h-4" />Listado de Cursos ({coursesList.length})
                 </button>
-                <button onClick={() => { if (editorKind !== "course") startNewInEditor("course"); else setCourseTab("editor"); }} className={`px-4 py-2 rounded-xl text-xs font-semibold ${courseTab === "editor" ? "bg-graphite text-white" : "bg-white text-graphite/65"}`}>
-                  {editingId && editorKind === "course" ? "Editando curso" : "+ Editor visual de Cursos"}
+                <button
+                  onClick={() => { if (editorKind !== "course") startNewInEditor("course"); else setCourseTab("editor"); }}
+                  className={`px-4 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-2 transition-colors ${courseTab === "editor" ? "bg-graphite text-white" : "bg-white text-slate-600 border border-slate-200 hover:text-graphite"}`}
+                >
+                  <EditIcon className="w-4 h-4" />{editingId && editorKind === "course" ? "Editando curso" : "Editor visual de Cursos"}
                 </button>
               </div>
               {courseTab === "list" ? renderPostTable(coursesList, "course") : renderWysiwyg("course")}
             </div>
           )}
 
-          {/* 3. APARTADO NOTICIAS (SIMÉTRICO + CRON RSS) */}
+          {/* 3. NOTICIAS + CRON RSS */}
           {section === "news" && (
             <div className="space-y-6">
-              <div className="flex flex-wrap gap-2 border-b border-black/10 pb-3">
-                <button onClick={() => setNewsTab("list")} className={`px-4 py-2 rounded-xl text-xs font-semibold ${newsTab === "list" ? "bg-graphite text-white" : "bg-white text-graphite/65"}`}>
-                  Listado de Noticias ({newsList.length})
+              <div className="flex flex-wrap gap-2 border-b border-slate-200 pb-4">
+                <button
+                  onClick={() => setNewsTab("list")}
+                  className={`px-4 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-2 transition-colors ${newsTab === "list" ? "bg-graphite text-white" : "bg-white text-slate-600 border border-slate-200 hover:text-graphite"}`}
+                >
+                  <ListIcon className="w-4 h-4" />Listado de Noticias ({newsList.length})
                 </button>
-                <button onClick={() => { if (editorKind !== "news") startNewInEditor("news"); else setNewsTab("editor"); }} className={`px-4 py-2 rounded-xl text-xs font-semibold ${newsTab === "editor" ? "bg-graphite text-white" : "bg-white text-graphite/65"}`}>
-                  {editingId && editorKind === "news" ? "Editando noticia" : "+ Editor visual de Noticias"}
+                <button
+                  onClick={() => { if (editorKind !== "news") startNewInEditor("news"); else setNewsTab("editor"); }}
+                  className={`px-4 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-2 transition-colors ${newsTab === "editor" ? "bg-graphite text-white" : "bg-white text-slate-600 border border-slate-200 hover:text-graphite"}`}
+                >
+                  <EditIcon className="w-4 h-4" />{editingId && editorKind === "news" ? "Editando noticia" : "Editor visual de Noticias"}
                 </button>
-                <button onClick={() => setNewsTab("rss")} className={`px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 ${newsTab === "rss" ? "bg-graphite text-white" : "bg-white text-graphite/65"}`}>
-                  <Spark className="w-3.5 h-3.5 text-amber" />Noticias Automáticas (Cron RSS)
-                  {rssQueue.length > 0 && <span className="px-1.5 py-0.5 rounded-full bg-amber text-graphite text-[10px] font-bold">{rssQueue.length}</span>}
+                <button
+                  onClick={() => setNewsTab("rss")}
+                  className={`px-4 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-2 transition-colors ${newsTab === "rss" ? "bg-graphite text-white" : "bg-white text-slate-600 border border-slate-200 hover:text-graphite"}`}
+                >
+                  <RssIcon className="w-4 h-4 text-amber" />Noticias Automáticas (Cron RSS)
+                  {rssQueue.length > 0 && <span className="px-2 py-0.5 rounded-full bg-amber text-graphite text-xs font-bold">{rssQueue.length}</span>}
                 </button>
               </div>
 
@@ -536,34 +592,42 @@ export default function AdminPage() {
               {newsTab === "editor" && renderWysiwyg("news")}
               {newsTab === "rss" && (
                 <div className="space-y-5">
-                  <div className="bg-white rounded-2xl p-6 border border-black/5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                    <div>
-                      <h2 className="font-display text-lg">Fuentes RSS conectadas (sin competencia directa)</h2>
-                      <p className="text-xs text-graphite/60 mt-1">
-                        Cron semanal sobre <strong>PubMed Ortodoncia</strong>, <strong>SEDO</strong> y <strong>Sleep Medicine Reviews</strong>. Envío de aviso por email a <code>alberto@tcdortodoncia.com</code> antes de publicar.
-                      </p>
+                  <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div className="flex items-start gap-3.5">
+                      <span className="w-10 h-10 rounded-xl bg-amber/15 text-amber grid place-items-center shrink-0"><RssIcon className="w-5 h-5" /></span>
+                      <div>
+                        <h2 className="font-display text-lg font-semibold">Fuentes RSS conectadas (sin competencia directa)</h2>
+                        <p className="text-sm text-slate-500 mt-1">
+                          Lectura semanal de <strong>PubMed Ortodoncia</strong>, <strong>SEDO</strong> y <strong>Sleep Medicine Reviews</strong> con aviso por email a <code>alberto@tcdortodoncia.com</code>.
+                        </p>
+                      </div>
                     </div>
-                    <span className="px-3 py-1.5 rounded-full bg-emerald-100 text-emerald-800 text-xs font-semibold shrink-0">Cron RSS activo ✓</span>
+                    <span className="px-3.5 py-1.5 rounded-full bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200 text-xs font-semibold shrink-0">Cron RSS activo ✓</span>
                   </div>
 
                   {rssQueue.length === 0 ? (
-                    <div className="bg-white rounded-2xl p-10 text-center text-sm text-graphite/60 border border-black/5">No quedan noticias automáticas pendientes de aprobar.</div>
+                    <div className="bg-white rounded-2xl p-12 text-center text-sm text-slate-500 border border-slate-200/80">No quedan noticias automáticas pendientes de aprobar.</div>
                   ) : (
                     <div className="space-y-4">
                       {rssQueue.map((item) => (
-                        <div key={item.id} className="bg-white rounded-2xl p-6 border border-black/5 flex flex-col md:flex-row md:items-center justify-between gap-6">
-                          <div className="space-y-1.5">
-                            <div className="flex items-center gap-2 text-xs">
-                              <span className="px-2.5 py-0.5 rounded-full bg-amber/20 text-graphite font-semibold">{item.source}</span>
-                              <span className="text-graphite/45">{item.date}</span>
+                        <div key={item.id} className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-6">
+                          <div className="flex items-start gap-4">
+                            <div className="w-16 h-14 rounded-xl bg-slate-100 text-slate-500 grid place-items-center shrink-0 border border-slate-200">
+                              <RssIcon className="w-5 h-5" />
                             </div>
-                            <h3 className="font-display text-xl">{item.title}</h3>
-                            <p className="text-sm text-graphite/65">{item.summary}</p>
+                            <div className="space-y-1.5">
+                              <div className="flex items-center gap-2 text-xs">
+                                <span className="px-2.5 py-0.5 rounded-md bg-slate-100 text-slate-700 font-semibold">{item.source}</span>
+                                <span className="text-slate-400">· {item.date}</span>
+                              </div>
+                              <h3 className="font-display text-lg font-semibold">{item.title}</h3>
+                              <p className="text-sm text-slate-500 leading-relaxed">{item.summary}</p>
+                            </div>
                           </div>
                           <div className="flex flex-wrap gap-2 shrink-0">
-                            <button onClick={() => approveRss(item)} className="btn btn-primary !py-2 !px-4 text-xs">Aprobar y publicar</button>
-                            <button onClick={() => editRssInEditor(item)} className="btn btn-ghost !py-2 !px-4 text-xs">Editar en Tiptap</button>
-                            <button onClick={() => setRssQueue((q) => q.filter((x) => x.id !== item.id))} className="px-3 py-2 text-xs text-rose-600 hover:bg-rose-50 rounded-full">Descartar</button>
+                            <button onClick={() => approveRss(item)} className="btn btn-primary !py-2.5 !px-4 text-xs"><Check className="w-3.5 h-3.5" />Aprobar y publicar</button>
+                            <button onClick={() => editRssInEditor(item)} className="btn btn-ghost !py-2.5 !px-4 text-xs"><EditIcon className="w-3.5 h-3.5" />Editar</button>
+                            <button onClick={() => setRssQueue((q) => q.filter((x) => x.id !== item.id))} className="p-2.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg" title="Descartar"><TrashIcon className="w-4 h-4" /></button>
                           </div>
                         </div>
                       ))}
@@ -576,29 +640,29 @@ export default function AdminPage() {
 
           {/* 4. CASOS Y RECOGIDAS */}
           {section === "cases" && (
-            <div className="bg-white rounded-2xl border border-black/5 overflow-x-auto">
-              <div className="px-6 py-4 border-b border-black/5">
-                <h2 className="font-display text-lg">Casos digitales y recogidas recibidas</h2>
-                <p className="text-xs text-graphite/55">Enrutados automáticamente por sede (Santander / Las Palmas).</p>
+            <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-x-auto">
+              <div className="px-6 py-5 border-b border-slate-200/80">
+                <h2 className="font-display text-lg font-semibold">Casos digitales y recogidas recibidas</h2>
+                <p className="text-sm text-slate-500 mt-0.5">Enrutados automáticamente por sede (Santander / Las Palmas).</p>
               </div>
               <table className="w-full text-left text-sm">
-                <thead className="bg-bone text-xs uppercase tracking-wider text-graphite/55 border-b border-black/5">
+                <thead className="bg-slate-50 text-xs uppercase tracking-wider text-slate-500 border-b border-slate-200/80">
                   <tr>
-                    <th className="px-5 py-3.5">Ref.</th>
-                    <th className="px-5 py-3.5">Clínica / Doctor</th>
-                    <th className="px-5 py-3.5">Aparato / Entrada</th>
-                    <th className="px-5 py-3.5">Sede</th>
-                    <th className="px-5 py-3.5">Estado</th>
+                    <th className="px-6 py-3.5">Ref.</th>
+                    <th className="px-6 py-3.5">Clínica / Doctor</th>
+                    <th className="px-6 py-3.5">Aparato / Entrada</th>
+                    <th className="px-6 py-3.5">Sede</th>
+                    <th className="px-6 py-3.5">Estado</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-black/5">
+                <tbody className="divide-y divide-slate-100">
                   {cases.map((c) => (
-                    <tr key={c.id}>
-                      <td className="px-5 py-4 font-mono text-xs font-bold">{c.id}<div className="font-sans font-normal text-graphite/45">{c.date}</div></td>
-                      <td className="px-5 py-4"><p className="font-semibold">{c.clinic}</p><p className="text-xs text-graphite/55">{c.doctor}</p></td>
-                      <td className="px-5 py-4"><p className="font-medium">{c.product}</p><p className="text-xs text-graphite/50">{c.type}</p></td>
-                      <td className="px-5 py-4 text-xs font-semibold">{c.lab}</td>
-                      <td className="px-5 py-4">
+                    <tr key={c.id} className="hover:bg-slate-50/60">
+                      <td className="px-6 py-4 font-mono text-xs font-bold">{c.id}<div className="font-sans font-normal text-slate-400 mt-0.5">{c.date}</div></td>
+                      <td className="px-6 py-4"><p className="font-semibold">{c.clinic}</p><p className="text-xs text-slate-500 mt-0.5">{c.doctor}</p></td>
+                      <td className="px-6 py-4"><p className="font-medium">{c.product}</p><p className="text-xs text-slate-500 mt-0.5">{c.type}</p></td>
+                      <td className="px-6 py-4 text-sm font-medium">{c.lab}</td>
+                      <td className="px-6 py-4">
                         <select
                           value={c.stage}
                           onChange={(e) => {
@@ -606,7 +670,7 @@ export default function AdminPage() {
                             setCases((list) => list.map((x) => x.id === c.id ? { ...x, stage: val } : x));
                             showToast(`Caso ${c.id} actualizado a "${val}".`);
                           }}
-                          className="text-xs font-semibold rounded-full px-3 py-1.5 bg-bone border border-black/10 outline-none"
+                          className="text-xs font-semibold rounded-lg px-3 py-2 bg-slate-100 border border-slate-200 outline-none"
                         >
                           <option>Recibido</option>
                           <option>En diseño CAD</option>
@@ -624,52 +688,53 @@ export default function AdminPage() {
           {/* 5. VALIDAR CLÍNICAS */}
           {section === "clinics" && (
             <div className="space-y-5">
-              <div className="bg-white rounded-2xl p-5 border border-black/5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div className="flex items-start gap-3">
-                  <Shield className="w-5 h-5 text-amber shrink-0 mt-0.5" />
+              <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="flex items-start gap-3.5">
+                  <span className="w-10 h-10 rounded-xl bg-amber/15 text-amber grid place-items-center shrink-0"><MailIcon className="w-5 h-5" /></span>
                   <div>
                     <p className="font-semibold text-sm">Notificación automática por correo electrónico</p>
-                    <p className="text-xs text-graphite/60">Al autorizar una clínica nueva se le envía automáticamente su correo de bienvenida con acceso a tarifas privadas.</p>
+                    <p className="text-sm text-slate-500 mt-0.5">Al autorizar una clínica nueva se le envía automáticamente su correo de bienvenida con acceso a tarifas privadas.</p>
                   </div>
                 </div>
-                <label className="flex items-center gap-2 text-xs font-semibold shrink-0 cursor-pointer">
+                <label className="flex items-center gap-2 text-sm font-semibold shrink-0 cursor-pointer">
                   <input type="checkbox" checked={notifyOnApprove} onChange={(e) => setNotifyOnApprove(e.target.checked)} />
                   Aviso email activo
                 </label>
               </div>
 
-              <div className="bg-white rounded-2xl border border-black/5 overflow-x-auto">
+              <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-x-auto">
                 <table className="w-full text-left text-sm">
-                  <thead className="bg-bone text-xs uppercase tracking-wider text-graphite/55 border-b border-black/5">
+                  <thead className="bg-slate-50 text-xs uppercase tracking-wider text-slate-500 border-b border-slate-200/80">
                     <tr>
-                      <th className="px-5 py-3.5">Clínica / Doctor</th>
-                      <th className="px-5 py-3.5">DNI / Col.</th>
-                      <th className="px-5 py-3.5">Sede</th>
-                      <th className="px-5 py-3.5">Estado tarifas</th>
-                      <th className="px-5 py-3.5 text-right">Acción</th>
+                      <th className="px-6 py-3.5">Clínica / Doctor</th>
+                      <th className="px-6 py-3.5">DNI / Col.</th>
+                      <th className="px-6 py-3.5">Sede</th>
+                      <th className="px-6 py-3.5">Estado tarifas</th>
+                      <th className="px-6 py-3.5 text-right">Acción</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-black/5">
+                  <tbody className="divide-y divide-slate-100">
                     {clinics.map((c) => (
-                      <tr key={c.id}>
-                        <td className="px-5 py-4">
+                      <tr key={c.id} className="hover:bg-slate-50/60">
+                        <td className="px-6 py-4">
                           <p className="font-semibold">{c.clinic}</p>
-                          <p className="text-xs text-graphite/55">{c.doctor} · {c.email}</p>
+                          <p className="text-xs text-slate-500 mt-0.5">{c.doctor} · {c.email}</p>
                         </td>
-                        <td className="px-5 py-4 text-xs font-mono text-graphite/70">
+                        <td className="px-6 py-4 text-xs font-mono text-slate-600">
                           <div>{c.dni}</div>
-                          <div>Col. {c.colegiado}</div>
+                          <div className="mt-0.5">Col. {c.colegiado}</div>
                         </td>
-                        <td className="px-5 py-4 text-xs">{c.lab}</td>
-                        <td className="px-5 py-4">
-                          <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${c.approved ? "bg-emerald-100 text-emerald-800" : "bg-amber/20 text-amber-900"}`}>
+                        <td className="px-6 py-4 text-sm">{c.lab}</td>
+                        <td className="px-6 py-4">
+                          <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${c.approved ? "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200" : "bg-amber/15 text-amber-900 ring-1 ring-amber/30"}`}>
+                            <span className={`w-1.5 h-1.5 rounded-full ${c.approved ? "bg-emerald-500" : "bg-amber"}`} />
                             {c.approved ? "Autorizada" : "Pendiente"}
                           </span>
                         </td>
-                        <td className="px-5 py-4 text-right">
+                        <td className="px-6 py-4 text-right">
                           <button
                             onClick={() => toggleClinicApproval(c.id)}
-                            className={`px-4 py-2 rounded-full text-xs font-semibold transition-colors ${c.approved ? "bg-bone text-graphite hover:bg-rose-50 hover:text-rose-600" : "bg-graphite text-white hover:bg-amber hover:text-graphite"}`}
+                            className={`px-4 py-2 rounded-lg text-xs font-semibold transition-colors ${c.approved ? "bg-slate-100 text-slate-700 hover:bg-rose-50 hover:text-rose-600" : "bg-graphite text-white hover:bg-amber hover:text-graphite"}`}
                           >
                             {c.approved ? "Revocar" : "Autorizar y avisar"}
                           </button>
