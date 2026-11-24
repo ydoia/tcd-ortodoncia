@@ -168,7 +168,7 @@ export default function AdminPage() {
   };
 
   const approveRss = (item: AutoNews) => {
-    const linkHtml = item.url ? `<p><a href="${item.url}" target="_blank" rel="noopener noreferrer">Leer fuente original ↗</a></p>` : "";
+    const linkHtml = item.url ? `<p><a href="${item.url}" target="_blank" rel="nofollow noopener noreferrer">Leer fuente original ↗</a></p>` : "";
     const p: BackofficePost = {
       id: item.id,
       kind: "news",

@@ -1,13 +1,34 @@
 "use client";
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Grad, Arrow, Spark, X } from "@/components/Icons";
-import { BackofficePost, BACKOFFICE_STORAGE_KEY, INITIAL_POSTS } from "@/lib/backoffice";
+import { Grad, Arrow, Spark } from "@/components/Icons";
+import { BackofficePost, BACKOFFICE_STORAGE_KEY, INITIAL_POSTS, toSlug } from "@/lib/backoffice";
+
+const MONTHS: Record<string, number> = {
+  enero: 0, febrero: 1, marzo: 2, abril: 3, mayo: 4, junio: 5,
+  julio: 6, agosto: 7, septiembre: 8, octubre: 9, noviembre: 10, diciembre: 11,
+};
+
+function isCoursePast(dateStr: string, title: string) {
+  const txt = `${dateStr} ${title}`.toLowerCase();
+  if (/pasad|edici[oó]n anterior|congresos/i.test(txt)) return true;
+  const yearMatch = txt.match(/\b(20\d{2})\b/);
+  if (!yearMatch) return false;
+  const year = parseInt(yearMatch[1], 10);
+  let month = 11;
+  for (const [m, idx] of Object.entries(MONTHS)) {
+    if (txt.includes(m)) {
+      month = idx;
+      break;
+    }
+  }
+  const eventEnd = new Date(year, month + 1, 0, 23, 59, 59);
+  return eventEnd.getTime() < Date.now();
+}
 
 export default function FormacionPage() {
   const [posts, setPosts] = useState<BackofficePost[]>(INITIAL_POSTS);
   const [tab, setTab] = useState<"todos" | "formacion" | "noticias">("todos");
-  const [activePost, setActivePost] = useState<BackofficePost | null>(null);
 
   useEffect(() => {
     try {
@@ -23,41 +44,37 @@ export default function FormacionPage() {
   const courses = published.filter((p) => p.kind === "course");
   const news = published.filter((p) => p.kind === "news");
 
-  const isPastCourse = (p: BackofficePost) =>
-    /pasad|2023|2024|2025|congresos/i.test(`${p.date} ${p.title}`);
-
   const renderCard = (n: BackofficePost) => {
     const isCourse = n.kind === "course";
-    const past = isCourse && isPastCourse(n);
+    const past = isCourse && isCoursePast(n.date, n.title);
+    const articleHref = `/formacion/${n.slug || toSlug(n.title)}`;
 
     return (
       <article key={n.id} className="bg-white rounded-3xl overflow-hidden ring-1 ring-black/5 flex flex-col justify-between">
         <div>
           {n.image && (
-            <div className="h-44 overflow-hidden">
-              <img src={n.image} alt={n.title} className="w-full h-full object-cover" />
-            </div>
+            <Link href={articleHref} className="block h-44 overflow-hidden">
+              <img src={n.image} alt={n.title} className="w-full h-full object-cover hover:scale-105 transition-transform duration-500" />
+            </Link>
           )}
           <div className="p-7 pb-0">
             <div className="flex items-center justify-between text-xs">
               <span className="px-3 py-1 rounded-full bg-bone font-semibold">{n.tag}</span>
               <span className="text-graphite/45">{n.date}</span>
             </div>
-            <h3 className="font-display text-2xl mt-4 leading-snug">{n.title}</h3>
+            <h3 className="font-display text-2xl mt-4 leading-snug">
+              <Link href={articleHref} className="hover:text-amber transition-colors">{n.title}</Link>
+            </h3>
             <div className="text-graphite/60 text-sm mt-3 leading-relaxed space-y-2 line-clamp-3" dangerouslySetInnerHTML={{ __html: n.html }} />
           </div>
         </div>
         <div className="p-7 pt-5">
           {isCourse ? (
             past ? (
-              <button
-                type="button"
-                onClick={() => setActivePost(n)}
-                className="w-full pt-4 border-t border-graphite/10 flex items-center justify-between text-sm font-semibold hover:text-amber text-left"
-              >
+              <Link href={articleHref} className="pt-4 border-t border-graphite/10 flex items-center justify-between text-sm font-semibold hover:text-amber">
                 <span>Ver resumen de la edición</span>
                 <Arrow />
-              </button>
+              </Link>
             ) : (
               <Link href="/contacto" className="pt-4 border-t border-graphite/10 flex items-center justify-between text-sm font-semibold hover:text-amber">
                 <span>Solicitar plaza / inscripción</span>
@@ -65,14 +82,10 @@ export default function FormacionPage() {
               </Link>
             )
           ) : (
-            <button
-              type="button"
-              onClick={() => setActivePost(n)}
-              className="w-full pt-4 border-t border-graphite/10 flex items-center justify-between text-sm font-semibold hover:text-amber text-left"
-            >
+            <Link href={articleHref} className="pt-4 border-t border-graphite/10 flex items-center justify-between text-sm font-semibold hover:text-amber">
               <span>Leer noticia completa</span>
               <Arrow />
-            </button>
+            </Link>
           )}
         </div>
       </article>
@@ -147,35 +160,6 @@ export default function FormacionPage() {
           <Link href="/contacto" className="btn btn-primary shrink-0">Proponer formación<Arrow /></Link>
         </div>
       </div>
-
-      {/* Modal lector de noticia / resumen de formación pasada */}
-      {activePost && (
-        <div onClick={() => setActivePost(null)} className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div onClick={(e) => e.stopPropagation()} className="bg-white rounded-3xl max-w-2xl w-full overflow-hidden shadow-2xl">
-            {activePost.image && (
-              <div className="h-56 overflow-hidden">
-                <img src={activePost.image} alt={activePost.title} className="w-full h-full object-cover" />
-              </div>
-            )}
-            <div className="p-7 sm:p-9 space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-xs">
-                  <span className="px-3 py-1 rounded-full bg-bone font-semibold">{activePost.tag}</span>
-                  <span className="text-graphite/50">{activePost.date}</span>
-                </div>
-                <button onClick={() => setActivePost(null)} className="p-1.5 rounded-full hover:bg-bone" aria-label="Cerrar"><X /></button>
-              </div>
-              <h2 className="font-display text-2xl sm:text-3xl leading-snug">{activePost.title}</h2>
-              <div className="text-graphite/75 text-sm leading-relaxed space-y-3 [&_a]:text-amber [&_a]:font-semibold [&_a]:underline" dangerouslySetInnerHTML={{ __html: activePost.html }} />
-              {activePost.kind === "course" && (
-                <div className="pt-4 border-t border-graphite/10 flex justify-end">
-                  <Link href="/contacto" className="btn btn-primary text-sm">Solicitar próxima edición<Arrow /></Link>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
     </section>
   );
 }
