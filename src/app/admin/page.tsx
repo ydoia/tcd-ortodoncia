@@ -26,6 +26,14 @@ interface AdminUser {
 const ADMIN_USERS: AdminUser[] = [
   { email: "alberto@tcdortodoncia.com", pass: "tcd2026", name: "Alberto", role: "Dirección · Santander" },
   { email: "juan@tcdortodoncia.com", pass: "tcd2026", name: "Juan Luis", role: "Dirección · Las Palmas" },
+  { email: "administracion@tcdortodoncia.com", pass: "tcd2026", name: "Administración", role: "Equipo · TCD" },
+];
+
+const LOADING_STEPS = [
+  { pct: 24, msg: "Verificando credenciales de sesión…" },
+  { pct: 54, msg: "Sincronizando publicaciones y feeds RSS…" },
+  { pct: 82, msg: "Cargando bandeja de casos STL/DICOM y clínicas…" },
+  { pct: 100, msg: "Inicializando panel privado TCD…" },
 ];
 
 const SESSION_KEY = "tcd_admin_session_v1";
@@ -33,10 +41,11 @@ const SESSION_KEY = "tcd_admin_session_v1";
 export default function AdminPage() {
   const [unlocked, setUnlocked] = useState(false);
   const [activeAdmin, setActiveAdmin] = useState<AdminUser>(ADMIN_USERS[0]);
-  const [emailInput, setEmailInput] = useState("alberto@tcdortodoncia.com");
+  const [emailInput, setEmailInput] = useState("");
   const [passInput, setPassInput] = useState("");
   const [authError, setAuthError] = useState<string | null>(null);
   const [authLoading, setAuthLoading] = useState(false);
+  const [loadingStep, setLoadingStep] = useState(0);
 
   const [section, setSection] = useState<Section>("overview");
   const [overviewTab, setOverviewTab] = useState<PostKind>("course");
@@ -87,12 +96,16 @@ export default function AdminPage() {
   const enterPlatform = (user: AdminUser) => {
     setAuthError(null);
     setActiveAdmin(user);
+    setLoadingStep(0);
     setAuthLoading(true);
     try { sessionStorage.setItem(SESSION_KEY, user.email); } catch {}
+    setTimeout(() => setLoadingStep(1), 550);
+    setTimeout(() => setLoadingStep(2), 1150);
+    setTimeout(() => setLoadingStep(3), 1750);
     setTimeout(() => {
       setAuthLoading(false);
       setUnlocked(true);
-    }, 950);
+    }, 2350);
   };
 
   const handleLogin = (e: React.FormEvent) => {
@@ -269,6 +282,7 @@ export default function AdminPage() {
   };
 
   if (authLoading) {
+    const currentStep = LOADING_STEPS[loadingStep] || LOADING_STEPS[0];
     return (
       <div className="min-h-screen bg-[#0d1014] text-white flex flex-col items-center justify-center p-6 relative overflow-hidden">
         <div className="absolute inset-0 grid-tech opacity-35 pointer-events-none" />
@@ -280,10 +294,18 @@ export default function AdminPage() {
           <div className="space-y-2">
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber">Acceso verificado</p>
             <h2 className="font-display text-2xl font-bold tracking-tight">Bienvenido, {activeAdmin.name}</h2>
-            <p className="text-sm text-white/55">{activeAdmin.role} · Cargando entorno privado…</p>
+            <p className="text-sm text-white/60">{activeAdmin.role}</p>
           </div>
-          <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
-            <div className="h-full bg-gradient-to-r from-amber to-emerald-400 rounded-full animate-[pulse_1s_ease-in-out_infinite] w-full origin-left" />
+          <div className="space-y-2.5">
+            <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-gradient-to-r from-amber to-emerald-400 rounded-full transition-all duration-500 ease-out"
+                style={{ width: `${currentStep.pct}%` }}
+              />
+            </div>
+            <p className="font-mono text-xs text-white/45 transition-opacity duration-300">
+              {currentStep.msg}
+            </p>
           </div>
         </div>
       </div>
@@ -311,35 +333,20 @@ export default function AdminPage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-2 p-1 rounded-xl bg-black/30 border border-white/5">
-            {ADMIN_USERS.map((u) => {
-              const active = emailInput.trim().toLowerCase() === u.email;
-              return (
-                <button
-                  key={u.email}
-                  type="button"
-                  onClick={() => { setEmailInput(u.email); setAuthError(null); }}
-                  className={`py-2 px-3 rounded-lg text-xs font-semibold transition-all ${active ? "bg-amber text-graphite shadow" : "text-white/60 hover:text-white"}`}
-                >
-                  {u.name}
-                </button>
-              );
-            })}
-          </div>
-
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-white/75 mb-1.5">Correo de administrador</label>
+              <label className="block text-sm font-medium text-white/75 mb-1.5">Correo electrónico</label>
               <input
                 required
                 type="email"
                 value={emailInput}
                 onChange={(e) => { setEmailInput(e.target.value); setAuthError(null); }}
+                placeholder="nombre@tcdortodoncia.com"
                 className="input input-dark text-sm"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-white/75 mb-1.5">Contraseña provisional</label>
+              <label className="block text-sm font-medium text-white/75 mb-1.5">Contraseña</label>
               <input
                 required
                 type="password"
@@ -357,9 +364,9 @@ export default function AdminPage() {
             <button type="submit" className="btn btn-primary w-full justify-center">Acceder al panel privado<Arrow /></button>
           </form>
 
-          <div className="pt-4 border-t border-white/10 flex items-center justify-between text-xs text-white/45">
-            <span>Acceso cifrado · SIKKER SVAR</span>
-            <button type="button" onClick={() => enterPlatform(ADMIN_USERS.find((u) => u.email === emailInput.trim().toLowerCase()) || ADMIN_USERS[0])} className="text-amber/80 font-medium hover:text-amber hover:underline">Demo rápida →</button>
+          <div className="pt-4 border-t border-white/10 flex items-center justify-between text-xs text-white/40">
+            <span>Acceso cifrado · SIKKER SVAR S.L.</span>
+            <span>Santander · Las Palmas</span>
           </div>
         </div>
 
