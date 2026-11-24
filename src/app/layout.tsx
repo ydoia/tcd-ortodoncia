@@ -4,6 +4,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import MobileBar from "@/components/MobileBar";
 import Assistant from "@/components/Assistant";
+import PublicChrome from "@/components/PublicChrome";
 
 export const viewport: Viewport = { themeColor: "#14161a", width: "device-width", initialScale: 1 };
 
@@ -39,11 +40,11 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />
       </head>
       <body className="font-sans" suppressHydrationWarning>
-        <Header />
+        <PublicChrome><Header /></PublicChrome>
         <main>{children}</main>
-        <Footer />
-        <MobileBar />
-        <Assistant />
+        <PublicChrome><Footer /></PublicChrome>
+        <PublicChrome><MobileBar /></PublicChrome>
+        <PublicChrome><Assistant /></PublicChrome>
       </body>
     </html>
   );
