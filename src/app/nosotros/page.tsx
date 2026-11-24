@@ -13,7 +13,7 @@ export default function NosotrosPage() {
             <p className="tag text-amber">Quiénes somos</p>
             <h1 className="font-display text-4xl lg:text-6xl mt-3 leading-[1.03]">Más de 35 años de oficio y tecnología ortodóntica.</h1>
             <p className="text-white/65 text-lg mt-5 leading-relaxed">
-              Somos especialistas en ortodoncia de laboratorio, apnea, ATM y ortodoncia digital 3D. Nuestros esfuerzos van dirigidos a que cada doctor encuentre un soporte sólido y cercano que responda a los casos más exigentes, desde Santander, Las Palmas y Bilbao hacia España, Europa, Reino Unido y Canadá.
+              Somos especialistas en ortodoncia de laboratorio, apnea, ATM y ortodoncia digital 3D. Nuestros esfuerzos van dirigidos a que cada doctor encuentre un soporte sólido y cercano que responda a los casos más exigentes, desde nuestros centros de producción de Santander y Las Palmas hacia España, Europa, Reino Unido y Canadá.
             </p>
           </div>
           <div className="relative aspect-[4/3] rounded-[28px] overflow-hidden ring-1 ring-white/10">

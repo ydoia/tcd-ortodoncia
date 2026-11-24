@@ -22,7 +22,7 @@ const PAGES: Record<string, { title: string; body: string[] }> = {
     title: "Aviso Legal",
     body: [
       "Titular: SIKKER SVAR S.L. (TCD ORTODONCIA).",
-      "Sedes: Avenida Pedro San Martín 16, 39007 Santander (Cantabria) · Calle Costa Rica 3, 35010 Las Palmas de Gran Canaria · Portuko Markesaren kalea 10, 48008 Bilbao.",
+      "Sedes: Avenida Pedro San Martín 16, 39007 Santander (Cantabria) · Calle Costa Rica 3, 35010 Las Palmas de Gran Canaria.",
       "Contacto: administracion@tcdortodoncia.com · Tel. +34 942 23 12 36.",
     ],
   },
