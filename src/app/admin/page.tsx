@@ -26,7 +26,8 @@ export default function AdminPage() {
   const [courseTab, setCourseTab] = useState<CourseTab>("list");
   const [newsTab, setNewsTab] = useState<NewsTab>("list");
   const [statusFilter, setStatusFilter] = useState<"all" | PostStatus>("all");
-  const [selectedLogId, setSelectedLogId] = useState<string>(CHANGELOG_ENTRIES[0].id);
+  const [selectedLogId, setSelectedLogId] = useState<string | null>(CHANGELOG_ENTRIES[0].id);
+  const [logSearch, setLogSearch] = useState("");
 
   const [posts, setPosts] = useState<BackofficePost[]>(INITIAL_POSTS);
   const [rssQueue, setRssQueue] = useState<AutoNews[]>(INITIAL_RSS);
@@ -259,7 +260,21 @@ export default function AdminPage() {
   const coursesList = posts.filter((p) => p.kind === "course");
   const newsList = posts.filter((p) => p.kind === "news");
   const pendingClinicsCount = clinics.filter((c) => !c.approved).length;
-  const activeLog = CHANGELOG_ENTRIES.find((e) => e.id === selectedLogId) || CHANGELOG_ENTRIES[0];
+  const filteredChangelog = CHANGELOG_ENTRIES.filter((entry) => {
+    const q = logSearch.trim().toLowerCase();
+    if (!q) return true;
+    const haystack = [
+      entry.version,
+      entry.date,
+      entry.title,
+      entry.tag,
+      entry.summary,
+      ...entry.details.flatMap((d) => [d.area, ...d.items]),
+    ]
+      .join(" ")
+      .toLowerCase();
+    return haystack.includes(q);
+  });
 
   const renderPostTable = (items: BackofficePost[], kind: PostKind) => {
     const activeItems = items.filter((p) => p.status !== "trash");
@@ -842,68 +857,98 @@ export default function AdminPage() {
             </div>
           )}
 
-          {/* 6. REGISTRO DE CAMBIOS (CHANGELOG MASTER-DETAIL) */}
+          {/* 6. REGISTRO DE CAMBIOS (TIMELINE VERTICAL CENTRADO + BUSCADOR + ACORDEÓN) */}
           {section === "changelog" && (
-            <div className="grid lg:grid-cols-[360px_1fr] gap-6 items-start">
-              {/* Lista de versiones a la izquierda */}
-              <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden divide-y divide-slate-100">
-                <div className="px-5 py-4 bg-slate-50/80 border-b border-slate-200/80">
-                  <h2 className="font-display font-semibold text-sm text-graphite">Historial de actualizaciones</h2>
-                  <p className="text-xs text-slate-500 mt-0.5">Selecciona una versión para ver el detalle técnico.</p>
+            <div className="max-w-4xl mx-auto space-y-6">
+              {/* Buscador */}
+              <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/80 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="relative flex-1">
+                  <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                  <input
+                    value={logSearch}
+                    onChange={(e) => setLogSearch(e.target.value)}
+                    placeholder="Buscar en el historial por título o detalle (ej. Tiptap, RSS, Bilbao, SEO)…"
+                    className="input !pl-10 !py-2.5 text-sm"
+                  />
                 </div>
-                {CHANGELOG_ENTRIES.map((entry) => {
-                  const active = entry.id === activeLog.id;
-                  return (
-                    <button
-                      key={entry.id}
-                      onClick={() => setSelectedLogId(entry.id)}
-                      className={`w-full text-left p-5 transition-colors flex flex-col gap-1.5 ${active ? "bg-amber/10 border-l-4 border-amber" : "hover:bg-slate-50"}`}
-                    >
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="font-mono text-xs font-bold px-2 py-0.5 rounded bg-graphite text-white">{entry.version}</span>
-                        <span className="text-xs text-slate-400">{entry.date}</span>
+                <span className="text-xs font-semibold text-slate-500 shrink-0">
+                  {filteredChangelog.length} {filteredChangelog.length === 1 ? "actualización" : "actualizaciones"}
+                </span>
+              </div>
+
+              {/* Timeline vertical acordeón */}
+              {filteredChangelog.length === 0 ? (
+                <div className="bg-white rounded-2xl p-10 text-center border border-slate-200/80 space-y-3">
+                  <p className="text-sm text-slate-500">No hay cambios que coincidan con “{logSearch}”.</p>
+                  <button type="button" onClick={() => setLogSearch("")} className="text-xs font-semibold text-amber hover:underline">
+                    Limpiar búsqueda
+                  </button>
+                </div>
+              ) : (
+                <div className="relative border-l-2 border-slate-200 ml-3 sm:ml-4 pl-6 sm:pl-8 space-y-5">
+                  {filteredChangelog.map((entry, idx) => {
+                    const isOpen = logSearch.trim().length > 0 || selectedLogId === entry.id;
+                    return (
+                      <div key={entry.id} className="relative">
+                        {/* Punto en la línea temporal */}
+                        <span
+                          className={`absolute -left-[33px] sm:-left-[41px] top-6 w-4 h-4 rounded-full ring-4 ring-[#f6f7f9] transition-colors ${
+                            idx === 0 || isOpen ? "bg-amber" : "bg-slate-300"
+                          }`}
+                        />
+
+                        <div className={`bg-white rounded-2xl border transition-all overflow-hidden ${isOpen ? "border-amber/60 shadow-sm" : "border-slate-200/80 shadow-xs hover:border-slate-300"}`}>
+                          <button
+                            type="button"
+                            onClick={() => setSelectedLogId(selectedLogId === entry.id ? null : entry.id)}
+                            className="w-full text-left p-5 sm:p-6 flex items-center justify-between gap-4"
+                          >
+                            <div className="space-y-1.5 min-w-0">
+                              <div className="flex flex-wrap items-center gap-2 text-xs">
+                                <span className="font-mono font-bold px-2.5 py-0.5 rounded-md bg-graphite text-white">{entry.version}</span>
+                                <span className="px-2.5 py-0.5 rounded-md bg-slate-100 text-slate-700 font-semibold">{entry.tag}</span>
+                                <span className="text-slate-400">· {entry.date}</span>
+                              </div>
+                              <h2 className="font-display text-lg font-bold text-graphite leading-snug">{entry.title}</h2>
+                              {!isOpen && <p className="text-sm text-slate-500 line-clamp-1">{entry.summary}</p>}
+                            </div>
+                            <span className={`w-8 h-8 rounded-full bg-slate-100 text-slate-600 grid place-items-center shrink-0 transition-transform duration-200 ${isOpen ? "rotate-45 bg-graphite text-white" : ""}`}>
+                              <Plus className="w-4 h-4" />
+                            </span>
+                          </button>
+
+                          {isOpen && (
+                            <div className="px-5 sm:px-6 pb-6 pt-2 border-t border-slate-100 space-y-5">
+                              <div className="flex flex-wrap items-center justify-between gap-2">
+                                <p className="text-sm text-slate-600 leading-relaxed max-w-2xl">{entry.summary}</p>
+                                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200 text-xs font-semibold shrink-0">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />Desplegado en vivo
+                                </span>
+                              </div>
+
+                              <div className="grid md:grid-cols-2 gap-4">
+                                {entry.details.map((block) => (
+                                  <div key={block.area} className="rounded-xl bg-slate-50 border border-slate-200/80 p-4 sm:p-5 space-y-2.5">
+                                    <h3 className="font-display font-semibold text-sm text-graphite">{block.area}</h3>
+                                    <ul className="space-y-2">
+                                      {block.items.map((it) => (
+                                        <li key={it} className="flex items-start gap-2 text-sm text-slate-600 leading-relaxed">
+                                          <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                                          <span>{it}</span>
+                                        </li>
+                                      ))}
+                                    </ul>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
                       </div>
-                      <p className="font-display font-semibold text-sm text-graphite leading-snug">{entry.title}</p>
-                      <span className="text-[11px] font-medium text-slate-500">{entry.tag}</span>
-                    </button>
-                  );
-                })}
-              </div>
-
-              {/* Detalle desplegado a la derecha */}
-              <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-7 lg:p-8 space-y-6">
-                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-5">
-                  <div className="space-y-1.5">
-                    <div className="flex items-center gap-2.5 text-xs">
-                      <span className="font-mono font-bold px-2.5 py-1 rounded-md bg-graphite text-white">{activeLog.version}</span>
-                      <span className="px-2.5 py-1 rounded-md bg-slate-100 text-slate-700 font-semibold">{activeLog.tag}</span>
-                      <span className="text-slate-400">· {activeLog.date}</span>
-                    </div>
-                    <h2 className="font-display text-2xl font-bold text-graphite">{activeLog.title}</h2>
-                  </div>
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200 text-xs font-semibold">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />Desplegado en vivo
-                  </span>
+                    );
+                  })}
                 </div>
-
-                <p className="text-sm text-slate-600 leading-relaxed">{activeLog.summary}</p>
-
-                <div className="space-y-5">
-                  {activeLog.details.map((block) => (
-                    <div key={block.area} className="rounded-xl bg-slate-50 border border-slate-200/80 p-5 space-y-2.5">
-                      <h3 className="font-display font-semibold text-sm text-graphite">{block.area}</h3>
-                      <ul className="space-y-2">
-                        {block.items.map((it) => (
-                          <li key={it} className="flex items-start gap-2.5 text-sm text-slate-600 leading-relaxed">
-                            <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                            <span>{it}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  ))}
-                </div>
-              </div>
+              )}
             </div>
           )}
         </div>
