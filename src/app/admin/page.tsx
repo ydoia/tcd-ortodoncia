@@ -511,7 +511,7 @@ export default function AdminPage() {
   );
 
   return (
-    <div className="min-h-screen bg-[#f6f7f9] text-graphite flex flex-col lg:flex-row">
+    <div className="min-h-screen lg:h-screen lg:overflow-hidden bg-[#f6f7f9] text-graphite flex flex-col lg:flex-row">
       {toast && (
         <div className="fixed top-5 right-5 z-50 bg-graphite text-white px-5 py-3.5 rounded-2xl shadow-2xl border border-amber/40 text-sm font-medium flex items-center gap-2.5">
           <span className="w-5 h-5 rounded-full bg-emerald-500 text-white grid place-items-center"><Check className="w-3.5 h-3.5" /></span>
@@ -520,7 +520,7 @@ export default function AdminPage() {
       )}
 
       {/* SIDEBAR */}
-      <aside className="lg:w-68 lg:sticky lg:top-0 lg:h-screen bg-[#12151a] text-white flex flex-col shrink-0 border-r border-white/5">
+      <aside className="lg:w-68 lg:h-full bg-[#12151a] text-white flex flex-col shrink-0 border-r border-white/5">
         <div className="p-6 border-b border-white/10 flex items-center gap-3 shrink-0">
           <LogoMark className="h-5" />
           <div>
@@ -567,8 +567,8 @@ export default function AdminPage() {
       </aside>
 
       {/* CONTENIDO PRINCIPAL */}
-      <div className="flex-1 flex flex-col min-w-0">
-        <header className="bg-white border-b border-slate-200/80 px-6 lg:px-10 h-16 flex items-center justify-between">
+      <div className="flex-1 flex flex-col min-w-0 lg:h-full lg:overflow-y-auto">
+        <header className="bg-white border-b border-slate-200/80 px-6 lg:px-10 h-16 flex items-center justify-between shrink-0 sticky top-0 z-20">
           <h1 className="font-display font-semibold text-lg text-graphite">
             {section === "overview" && "Dashboard · Vista general"}
             {section === "courses" && "Cursos y Formación"}

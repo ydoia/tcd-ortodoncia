@@ -132,7 +132,7 @@ export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
   {
     id: "v1.6",
     version: "v1.6",
-    date: "24 Nov 2026 · 11:45",
+    date: "24 Nov 2026",
     title: "Páginas Dedicadas /formacion/[slug], CTAs por Fecha y Nofollow SEO",
     tag: "Diseño & UX",
     summary: "Sustitución del modal de lectura por páginas editoriales propias, detección automática de cursos pasados/próximos y blindaje SEO en enlaces externos.",
@@ -158,7 +158,7 @@ export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
   {
     id: "v1.5",
     version: "v1.5",
-    date: "24 Nov 2026 · 11:38",
+    date: "23 Nov 2026",
     title: "RSS Científico en Vivo (/api/rss), Aprobar Clínicas y Prescripción STL",
     tag: "Backoffice",
     summary: "Conexión real con PubMed y Google News Dental ES desde servidor, más preparación completa del flujo de archivos STL/DICOM.",
@@ -183,7 +183,7 @@ export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
   {
     id: "v1.4",
     version: "v1.4",
-    date: "24 Nov 2026 · 11:30",
+    date: "20 Nov 2026",
     title: "Backoffice SaaS, Papelera, Editor Tiptap y Log de Cambios",
     tag: "Backoffice",
     summary: "Rediseño integral del panel privado /admin con editor visual profesional, gestión de borradores/papelera y registro de versiones en vivo.",
@@ -208,7 +208,7 @@ export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
   {
     id: "v1.3",
     version: "v1.3",
-    date: "24 Nov 2026 · 10:40",
+    date: "19 Nov 2026",
     title: "Reestructuración de Formación/Noticias y Limpieza de Sedes",
     tag: "Diseño & UX",
     summary: "Separación pública en /formacion entre cursos propios y noticias del sector, más ajustes solicitados en la reunión del 17 de noviembre.",
@@ -233,7 +233,7 @@ export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
   {
     id: "v1.2",
     version: "v1.2",
-    date: "24 Nov 2026 · 09:50",
+    date: "18 Nov 2026",
     title: "Envío de Casos a Ancho Completo y Portal Clínicas (/acceso)",
     tag: "Arquitectura",
     summary: "Optimización del flujo de prescripción digital y control de registro profesional para tarifas.",
