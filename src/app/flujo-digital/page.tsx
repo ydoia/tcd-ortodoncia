@@ -61,9 +61,9 @@ export default function FlujoDigitalPage() {
                   {s}
                 </span>
               ))}
-              <a href={PLATFORMS.perfectAligner} target="_blank" rel="noopener noreferrer" className="px-4 py-2.5 rounded-2xl bg-amber font-display text-base text-graphite">
-                Perfect Aligner ↗
-              </a>
+              <Link href="/acceso" className="px-4 py-2.5 rounded-2xl bg-amber font-display text-base text-graphite hover:bg-sun transition-colors">
+                Enviar vía Plataforma TCD →
+              </Link>
             </div>
           </div>
         </div>

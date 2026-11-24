@@ -8,8 +8,8 @@ export default function LaboratoriosPage() {
     <section className="bg-bone py-16 lg:py-24">
       <div className="max-w-7xl mx-auto px-6 space-y-12">
         <div className="max-w-2xl">
-          <p className="tag text-titanium">Centros de trabajo</p>
-          <h1 className="font-display text-4xl lg:text-5xl mt-3 leading-[1.05]">Santander, Las Palmas y Bilbao</h1>
+          <p className="tag text-titanium">Centros de producción</p>
+          <h1 className="font-display text-4xl lg:text-5xl mt-3 leading-[1.05]">Santander y Las Palmas</h1>
           <p className="text-graphite/60 mt-3">
             Suministramos a clínicas y hospitales de toda España, Europa, Reino Unido y Canadá. Recogidas y entregas gratuitas en pedidos superiores a 50 € en Península y Canarias.
           </p>

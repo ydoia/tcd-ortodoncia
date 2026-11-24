@@ -34,7 +34,6 @@ export default function ContactoPage() {
                 <select value={lab} onChange={(e) => setLab(e.target.value)} className="input">
                   <option>TCD Santander</option>
                   <option>TCD Las Palmas</option>
-                  <option>TCD Bilbao</option>
                 </select>
               </div>
               <div>

@@ -218,11 +218,11 @@ export function LabsStrip() {
         <Reveal className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
           <div>
             <p className="tag text-titanium">Laboratorios</p>
-            <h2 className="font-display text-4xl lg:text-5xl mt-4 leading-[1.05]">Cerca de ti, en tres sedes.</h2>
+            <h2 className="font-display text-4xl lg:text-5xl mt-4 leading-[1.05]">Cerca de ti, en dos centros de producción.</h2>
           </div>
           <Link href="/laboratorios" className="btn btn-ghost self-start md:self-auto">Ver laboratorios<Arrow /></Link>
         </Reveal>
-        <div className="grid md:grid-cols-3 gap-5">
+        <div className="grid md:grid-cols-2 gap-6">
           {LABS.map((l, i) => (
             <Reveal key={l.id} delay={i * 0.08}>
               <div className="group bg-white rounded-3xl overflow-hidden ring-1 ring-black/5 h-full flex flex-col">

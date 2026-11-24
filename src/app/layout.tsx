@@ -11,7 +11,7 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://tcdortodoncia.com"),
   title: { default: "TCD Ortodoncia · Laboratorio de ortodoncia, apnea y ortodoncia digital 3D", template: "%s · TCD Ortodoncia" },
   description:
-    "Laboratorio de ortodoncia en Santander, Las Palmas y Bilbao. Aparatología, apnea (D.A.M.A. TCD® patentado), cementado indirecto, MARPE y ortodoncia digital 3D. 8 h de producción y portes gratis.",
+    "Laboratorio de ortodoncia en Santander y Las Palmas. Aparatología, apnea (D.A.M.A. TCD® patentado), cementado indirecto y directo 3D, MARPE y ortodoncia digital. 8 h de producción y portes gratis.",
   robots: { index: false, follow: false }, // demo: no indexar
   openGraph: { title: "TCD Ortodoncia", description: "Precisión digital. Entregas en 8 horas.", images: ["/assets/tcd/IBT-02.jpg"], locale: "es_ES", type: "website" },
 };

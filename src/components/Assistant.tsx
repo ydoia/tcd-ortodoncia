@@ -39,11 +39,11 @@ function answer(q: string): Msg {
     return { from: "bot", text: "Alineamos tu escaneado con el TAC, planificamos los micros y diseñamos la férula quirúrgica de inserción guiada, además de MARPE, distal-mesialjet o T-Bow a medida.", links: [{ label: "Ver MARPE y microimplantes", href: "/soluciones/marpe-microimplantes" }] };
   if (has("qué archivos", "que archivos", "formato"))
     return { from: "bot", text: "STL, PLY u OBJ de las dos arcadas y la mordida. Para microimplantes o MARPE añade el DICOM (CBCT). Las fotos intraorales siempre ayudan. Si trabajas con modelos físicos, pide la recogida." };
-  if (has("lingual", "cementado", "cubeta"))
-    return { from: "bot", text: "Hacemos cementado indirecto de cualquier bracket, vestibular o lingual: setup, posicionamiento y cubetas impresas en 3D (incluida una cubeta exclusiva para 3M APC Flash-Free).", links: [{ label: "Ver cementado indirecto", href: "/soluciones/cementado-indirecto" }] };
+  if (has("cementado", "cubeta", "directo", "indirecto"))
+    return { from: "bot", text: "Hacemos cementado indirecto y directo de cualquier bracket: setup digital, posicionamiento y cubetas impresas en 3D (incluida cubeta con guías para 3M APC Flash-Free).", links: [{ label: "Ver cementado 3D", href: "/soluciones/cementado-indirecto" }] };
   if (has("alineador", "perfect", "invisible"))
     return { from: "bot", text: "Trabajamos los alineadores con Perfect Aligner como marca aliada: planificación digital, setup y seguimiento online.", links: [{ label: "Ortodoncia digital 3D", href: "/soluciones/digital-3d" }] };
-  if (has("teléfono", "telefono", "llamar", "contacto", "dónde", "donde", "horario", "santander", "palmas", "bilbao"))
+  if (has("teléfono", "telefono", "llamar", "contacto", "dónde", "donde", "horario", "santander", "palmas"))
     return { from: "bot", text: LABS.map((l) => `${l.city}: ${l.phone} · ${l.hours.map((h) => h.join(" ")).join(", ")}`).join("\n"), links: [{ label: "Ver laboratorios", href: "/laboratorios" }] };
   if (has("catálogo", "catalogo", "producto"))
     return { from: "bot", text: `Tenemos más de ${PRODUCTS.length} aparatos en el catálogo online, con filtros por categoría.`, links: [{ label: "Abrir catálogo", href: "/catalogo" }] };

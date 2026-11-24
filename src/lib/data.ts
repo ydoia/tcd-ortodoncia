@@ -27,19 +27,6 @@ export const LABS = [
     map: "https://www.google.com/maps?q=Calle+Costa+Rica+3+Las+Palmas+de+Gran+Canaria&output=embed",
     image: "/assets/tcd/TCD-Las-Palmas-001.jpeg",
   },
-  {
-    id: "bilbao",
-    city: "Bilbao",
-    role: "Sede de reuniones",
-    address: "Portuko Markesaren kalea 10 · 48008 Bilbao",
-    phone: "+34 944 91 64 13",
-    mobile: "",
-    whatsapp: "34652481463",
-    email: "administracion@tcdortodoncia.com",
-    hours: [["Lunes a jueves", "8:00 – 19:30"], ["Viernes", "8:00 – 14:00"]],
-    map: "https://www.google.com/maps?q=Portuko+Markesaren+kalea+10+Bilbao&output=embed",
-    image: "/assets/tcd/11-foto-trabajando.jpg",
-  },
 ] as const;
 
 export type Solution = {
@@ -105,19 +92,19 @@ export const SOLUTIONS: Solution[] = [
   },
   {
     slug: "cementado-indirecto",
-    name: "Cementado indirecto y ortodoncia lingual",
+    name: "Cementado indirecto y directo 3D",
     short: "Setup + cubetas 3D",
-    claim: "Posicionamiento exacto de cada bracket, transferido a boca con cubetas impresas.",
-    image: "/assets/tcd/dsc01162.jpg",
+    claim: "Posicionamiento digital exacto de cada bracket, transferido a boca con cubetas impresas.",
+    image: "/assets/tcd/IBT-02.jpg",
     intro:
-      "Cementado indirecto de cualquier bracket del mercado, vestibular o lingual. Sistema combinado basado en el Hiro System modificado, con transfers individualizados que aseguran la reproducibilidad en caso de recementado.",
+      "Cementado indirecto y directo de cualquier bracket del mercado. Posicionamiento digital 3D, diseño de cubetas e impresión de alta precisión con guías de inserción para cementado rápido en clínica.",
     bullets: [
       "Posicionamiento de brackets y diseño 3D de cubetas",
       "Cubeta exclusiva para 3M APC Flash-Free con guías de inserción",
-      "Transfers individualizados, TARG o Class según preferencia",
+      "Setups digitales y planificación revisada en 3Shape",
       "Puedes contratar solo la parte del proceso que necesites",
     ],
-    specs: [["Brackets", "Cualquier marca"], ["Técnica", "Hiro System modificado"], ["Entrada", "Escáner intraoral"]],
+    specs: [["Brackets", "Cualquier marca"], ["Software", "3Shape Ortho System"], ["Entrada", "Escáner intraoral"]],
   },
   {
     slug: "marpe-microimplantes",
@@ -178,7 +165,7 @@ export const PRODUCTS: { name: string; cat: (typeof CATEGORIES)[number]; file: s
   { name: "Modelos impresos en 3D", cat: "Digital", file: "STL", days: "24 h" },
 ];
 
-export const SCANNERS = ["3Shape", "iTero", "Medit", "Carestream", "Planmeca", "Dentsply Sirona", "Shining 3D", "Straumann", "Modjaw", "Dental Wings", "3M"];
+export const SCANNERS = ["Shining 3D", "Dexis", "Medit", "3Shape", "iTero", "Carestream", "Planmeca", "Dentsply Sirona", "Straumann", "Modjaw", "Dental Wings", "3M"];
 
 export const STATS = [
   { value: 35, suffix: "+", label: "años fabricando ortodoncia" },
@@ -198,7 +185,7 @@ export const FAQS = [
 
 export const TESTIMONIALS = [
   { quote: "La precisión del cementado indirecto nos ha ahorrado tiempo de sillón en cada caso. Y siempre hay un técnico al otro lado del teléfono.", name: "Dra. Laura M.", role: "Ortodoncista · Santander" },
-  { quote: "Llevamos años enviando los dispositivos de apnea a TCD. El ajuste es excelente y los pacientes los toleran muy bien.", name: "Dr. Javier R.", role: "Medicina del sueño · Bilbao" },
+  { quote: "Llevamos años enviando los dispositivos de apnea a TCD. El ajuste es excelente y los pacientes los toleran muy bien.", name: "Dr. Javier R.", role: "Medicina del sueño · País Vasco" },
   { quote: "Subimos el escaneado por la mañana y el aparato llega en plazo. El flujo digital con ellos es muy sencillo.", name: "Dra. Carmen S.", role: "Clínica dental · Las Palmas" },
 ];
 
