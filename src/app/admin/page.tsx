@@ -519,8 +519,8 @@ export default function AdminPage() {
             { id: "overview", label: "Dashboard", icon: <File className="w-4 h-4" /> },
             { id: "courses", label: "Cursos y Formación", icon: <Grad className="w-4 h-4" />, badge: coursesList.filter((p) => p.status !== "trash").length },
             { id: "news", label: "Noticias", icon: <Spark className="w-4 h-4" />, badge: rssQueue.length },
-            { id: "cases", label: "Casos y Recogidas", icon: <Cube className="w-4 h-4" />, badge: cases.length },
-            { id: "clinics", label: "Validar Clínicas", icon: <User className="w-4 h-4" />, badge: pendingClinicsCount },
+            { id: "cases", label: "Casos y Archivos STL", icon: <Cube className="w-4 h-4" />, badge: cases.length },
+            { id: "clinics", label: "Aprobar clínicas", icon: <User className="w-4 h-4" />, badge: pendingClinicsCount },
             { id: "changelog", label: "Registro de cambios", icon: <Clock className="w-4 h-4" />, badge: CHANGELOG_ENTRIES.length },
           ].map((item) => {
             const active = section === item.id;
@@ -558,8 +558,8 @@ export default function AdminPage() {
             {section === "overview" && "Dashboard · Vista general"}
             {section === "courses" && "Cursos y Formación"}
             {section === "news" && "Noticias y Actualidad RSS"}
-            {section === "cases" && "Casos digitales y recogidas"}
-            {section === "clinics" && "Validación de clínicas y tarifas"}
+            {section === "cases" && "Casos recibidos, archivos STL/DICOM y recogidas"}
+            {section === "clinics" && "Aprobar clínicas nuevas y acceso a tarifas"}
             {section === "changelog" && "Registro de cambios y actualizaciones"}
           </h1>
           <div className="flex items-center gap-3 text-sm">
@@ -577,7 +577,7 @@ export default function AdminPage() {
                   { lbl: "Cursos publicados", val: coursesList.filter((p) => p.status === "published").length, sub: `${coursesList.filter((p) => p.status === "draft").length} en borrador`, icon: <Grad className="w-5 h-5" /> },
                   { lbl: "Noticias publicadas", val: newsList.filter((p) => p.status === "published").length, sub: `${newsList.filter((p) => p.status === "draft").length} en borrador`, icon: <Spark className="w-5 h-5" /> },
                   { lbl: "RSS pendientes", val: rssQueue.length, sub: "Cron semanal", icon: <RssIcon className="w-5 h-5" /> },
-                  { lbl: "Clínicas por validar", val: pendingClinicsCount, sub: "Esperando tarifas", icon: <User className="w-5 h-5" /> },
+                  { lbl: "Clínicas por aprobar", val: pendingClinicsCount, sub: "Esperando tarifas", icon: <User className="w-5 h-5" /> },
                 ].map((k) => (
                   <div key={k.lbl} className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-xs flex items-start justify-between gap-4">
                     <div>
@@ -716,20 +716,23 @@ export default function AdminPage() {
             </div>
           )}
 
-          {/* 4. CASOS Y RECOGIDAS */}
+          {/* 4. CASOS Y ARCHIVOS STL/DICOM */}
           {section === "cases" && (
             <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-x-auto">
-              <div className="px-6 py-5 border-b border-slate-200/80">
-                <h2 className="font-display text-lg font-semibold">Casos digitales y recogidas recibidas</h2>
-                <p className="text-sm text-slate-500 mt-0.5">Enrutados automáticamente por sede (Santander / Las Palmas).</p>
+              <div className="px-6 py-5 border-b border-slate-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div>
+                  <h2 className="font-display text-lg font-semibold">Casos digitales (STL / DICOM) y recogidas</h2>
+                  <p className="text-sm text-slate-500 mt-0.5">Enrutados automáticamente al servidor NAS de Santander o Las Palmas según la clínica.</p>
+                </div>
+                <span className="px-3 py-1 rounded-full bg-slate-100 text-slate-600 text-xs font-semibold shrink-0">Enrutado NAS activo</span>
               </div>
               <table className="w-full text-left text-sm">
                 <thead className="bg-slate-50 text-xs uppercase tracking-wider text-slate-500 border-b border-slate-200/80">
                   <tr>
                     <th className="px-6 py-3.5">Ref.</th>
                     <th className="px-6 py-3.5">Clínica / Doctor</th>
-                    <th className="px-6 py-3.5">Aparato / Entrada</th>
-                    <th className="px-6 py-3.5">Sede</th>
+                    <th className="px-6 py-3.5">Aparato y archivos adjuntos</th>
+                    <th className="px-6 py-3.5">Destino</th>
                     <th className="px-6 py-3.5">Estado</th>
                   </tr>
                 </thead>
@@ -738,8 +741,22 @@ export default function AdminPage() {
                     <tr key={c.id} className="hover:bg-slate-50/60">
                       <td className="px-6 py-4 font-mono text-xs font-bold">{c.id}<div className="font-sans font-normal text-slate-400 mt-0.5">{c.date}</div></td>
                       <td className="px-6 py-4"><p className="font-semibold">{c.clinic}</p><p className="text-xs text-slate-500 mt-0.5">{c.doctor}</p></td>
-                      <td className="px-6 py-4"><p className="font-medium">{c.product}</p><p className="text-xs text-slate-500 mt-0.5">{c.type}</p></td>
-                      <td className="px-6 py-4 text-sm font-medium">{c.lab}</td>
+                      <td className="px-6 py-4">
+                        <p className="font-medium">{c.product}</p>
+                        <div className="flex flex-wrap gap-1.5 mt-1.5">
+                          {c.files.map((f) => (
+                            <button
+                              key={f}
+                              type="button"
+                              onClick={() => showToast(`Descargando ${f} desde ${c.lab} (demo)…`)}
+                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-slate-100 hover:bg-amber/25 text-slate-700 font-mono text-[11px] transition-colors"
+                            >
+                              <File className="w-3 h-3 text-slate-400" />{f}
+                            </button>
+                          ))}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-xs font-semibold text-slate-700">{c.lab}</td>
                       <td className="px-6 py-4">
                         <select
                           value={c.stage}

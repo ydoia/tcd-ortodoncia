@@ -25,6 +25,14 @@ function WizardContent() {
   const [submitted, setSubmitted] = useState(false);
 
   const selectedLab = LABS.find((l) => l.id === lab) || LABS[0];
+  const selectedProdInfo = PRODUCTS.find((p) => p.name === product);
+  const reqFilesHint = selectedProdInfo
+    ? selectedProdInfo.cat === "Apnea"
+      ? "Requerido para Apnea: Escaneado superior e inferior + registro de avance mandibular."
+      : selectedProdInfo.file.includes("DICOM")
+      ? "Requerido para Microimplantes / MARPE: Escaneado STL + TAC/CBCT en formato DICOM + fotografías."
+      : `Requerido para ${selectedProdInfo.cat}: ${selectedProdInfo.file} (arcada superior, inferior y mordida).`
+    : "Arcada superior, inferior, mordida y CBCT/DICOM si aplica.";
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files) return;
@@ -147,7 +155,7 @@ function WizardContent() {
                 <label className="border-2 border-dashed border-graphite/15 hover:border-amber rounded-2xl p-10 flex flex-col items-center justify-center text-center cursor-pointer transition-colors bg-bone/50">
                   <Upload className="w-8 h-8 text-amber mb-2" />
                   <span className="font-medium text-sm">Arrastra tus archivos aquí o haz clic para seleccionarlos</span>
-                  <span className="text-xs text-graphite/50 mt-1">Arcada superior, inferior, mordida y CBCT/DICOM si aplica</span>
+                  <span className="text-xs text-graphite/60 mt-1.5 font-medium">{reqFilesHint}</span>
                   <input type="file" multiple onChange={handleFileChange} className="hidden" />
                 </label>
                 {files.length > 0 && (

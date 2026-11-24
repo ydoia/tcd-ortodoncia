@@ -27,7 +27,7 @@ export type BackofficePost = {
 
 export type AutoNews = { id: string; source: string; date: string; title: string; summary: string; url?: string };
 export type PendingClinic = { id: string; clinic: string; doctor: string; email: string; dni: string; colegiado: string; lab: string; approved: boolean };
-export type LabCase = { id: string; clinic: string; doctor: string; product: string; type: string; lab: string; date: string; stage: string };
+export type LabCase = { id: string; clinic: string; doctor: string; product: string; type: string; lab: string; date: string; stage: string; files: string[] };
 
 export const BACKOFFICE_STORAGE_KEY = "tcd_backoffice_v4";
 
@@ -117,9 +117,9 @@ export const INITIAL_RSS: AutoNews[] = [
 ];
 
 export const INITIAL_CASES: LabCase[] = [
-  { id: "CAS-2084", clinic: "Clínica Dental Bahía", doctor: "Dra. Elena Ruiz", product: "MARPE Power-Screw", type: "STL + DICOM", lab: "Santander", date: "Hoy · 09:15", stage: "En diseño CAD" },
-  { id: "CAS-2083", clinic: "Ortodoncia Atlántico", doctor: "Dr. Marcos León", product: "DDBG nylon regulable", type: "STL + Registro", lab: "Las Palmas", date: "Hoy · 08:40", stage: "Producción 8h" },
-  { id: "CAS-2082", clinic: "Instituto Dental Norte", doctor: "Dr. Pablo Sáez", product: "Recogida física (modelo)", type: "Mensajería gratis", lab: "Santander", date: "Ayer · 17:20", stage: "Recibido" },
+  { id: "CAS-2084", clinic: "Clínica Dental Bahía", doctor: "Dra. Elena Ruiz", product: "MARPE Power-Screw", type: "STL + DICOM", lab: "NAS Santander", date: "Hoy · 09:15", stage: "En diseño CAD", files: ["maxilar_sup.stl", "maxilar_inf.stl", "cbct_paciente.dcm"] },
+  { id: "CAS-2083", clinic: "Ortodoncia Atlántico", doctor: "Dr. Marcos León", product: "DDBG nylon regulable", type: "STL + Registro", lab: "NAS Las Palmas", date: "Hoy · 08:40", stage: "Producción 8h", files: ["escaneo_dual.stl", "avance_mordida.stl"] },
+  { id: "CAS-2082", clinic: "Instituto Dental Norte", doctor: "Dr. Pablo Sáez", product: "Recogida física (modelo)", type: "Mensajería gratis", lab: "NAS Santander", date: "Ayer · 17:20", stage: "Recibido", files: ["hoja_prescripcion.pdf"] },
 ];
 
 export const INITIAL_CLINICS: PendingClinic[] = [
