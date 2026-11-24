@@ -130,6 +130,57 @@ export const INITIAL_CLINICS: PendingClinic[] = [
 
 export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
   {
+    id: "v1.6",
+    version: "v1.6",
+    date: "24 Nov 2026 · 11:45",
+    title: "Páginas Dedicadas /formacion/[slug], CTAs por Fecha y Nofollow SEO",
+    tag: "Diseño & UX",
+    summary: "Sustitución del modal de lectura por páginas editoriales propias, detección automática de cursos pasados/próximos y blindaje SEO en enlaces externos.",
+    details: [
+      {
+        area: "Lectura editorial (/formacion/[slug])",
+        items: [
+          "Nueva ruta dedicada por cada curso y noticia con cabecera, imagen destacada, formato HTML completo y retorno directo a /formacion.",
+          "Eliminado el popup modal en favor de una experiencia de lectura nativa e indexable.",
+          "Botón 'Leer noticia completa' diferenciado exclusivamente para noticias.",
+        ],
+      },
+      {
+        area: "Lógica temporal y SEO",
+        items: [
+          "Detección automática de fecha en formaciones: las ediciones futuras muestran 'Solicitar plaza / inscripción' (/contacto) y las pasadas 'Ver resumen de la edición'.",
+          "Añadido atributo rel='nofollow noopener noreferrer' en enlaces a fuentes externas de noticias RSS.",
+          "Nuevo timeline vertical centrado tipo acordeón con buscador de texto completo en este Registro de cambios.",
+        ],
+      },
+    ],
+  },
+  {
+    id: "v1.5",
+    version: "v1.5",
+    date: "24 Nov 2026 · 11:38",
+    title: "RSS Científico en Vivo (/api/rss), Aprobar Clínicas y Prescripción STL",
+    tag: "Backoffice",
+    summary: "Conexión real con PubMed y Google News Dental ES desde servidor, más preparación completa del flujo de archivos STL/DICOM.",
+    details: [
+      {
+        area: "Cron RSS en vivo (/api/rss)",
+        items: [
+          "Endpoint serverless que consulta en directo PubMed (ortodoncia/apnea/MARPE) y Google News Odontología ES.",
+          "Filtrado automático de competencia directa y resúmenes editoriales limpios listos para aprobar con un clic.",
+        ],
+      },
+      {
+        area: "Clínicas y Casos STL/DICOM",
+        items: [
+          "Renombrado de sección a 'Aprobar clínicas' con verificación de DNI/NIF y Nº de Colegiado para liberar tarifas.",
+          "Bandeja de casos en /admin preparada con badges de archivos recibidos (.stl, .dcm, .pdf) y estado de producción.",
+          "Indicaciones dinámicas de archivos requeridos por aparato en el formulario público /enviar-caso.",
+        ],
+      },
+    ],
+  },
+  {
     id: "v1.4",
     version: "v1.4",
     date: "24 Nov 2026 · 11:30",
