@@ -520,8 +520,8 @@ export default function AdminPage() {
       )}
 
       {/* SIDEBAR */}
-      <aside className="lg:w-68 bg-[#12151a] text-white flex flex-col shrink-0 border-r border-white/5">
-        <div className="p-6 border-b border-white/10 flex items-center gap-3">
+      <aside className="lg:w-68 lg:sticky lg:top-0 lg:h-screen bg-[#12151a] text-white flex flex-col shrink-0 border-r border-white/5">
+        <div className="p-6 border-b border-white/10 flex items-center gap-3 shrink-0">
           <LogoMark className="h-5" />
           <div>
             <p className="font-display font-bold text-sm leading-none">TCD BACKOFFICE</p>
@@ -529,7 +529,7 @@ export default function AdminPage() {
           </div>
         </div>
 
-        <nav className="p-4 space-y-1.5 flex-1">
+        <nav className="p-4 space-y-1.5 flex-1 overflow-y-auto">
           {[
             { id: "overview", label: "Dashboard", icon: <File className="w-4 h-4" /> },
             { id: "courses", label: "Cursos y Formación", icon: <Grad className="w-4 h-4" />, badge: coursesList.filter((p) => p.status !== "trash").length },
@@ -556,7 +556,7 @@ export default function AdminPage() {
           })}
         </nav>
 
-        <div className="p-4 border-t border-white/10 space-y-2 text-sm">
+        <div className="p-4 border-t border-white/10 space-y-2 text-sm shrink-0">
           <Link href="/formacion" target="_blank" className="flex items-center justify-between px-3 py-2 rounded-lg text-white/65 hover:bg-white/5 hover:text-white">
             <span>Ver Formación pública</span><span>↗</span>
           </Link>
