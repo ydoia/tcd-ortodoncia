@@ -2,73 +2,27 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Grad, Arrow, Spark } from "@/components/Icons";
-
-type PostItem = {
-  id: string;
-  tag: string;
-  date: string;
-  title: string;
-  slug?: string;
-  html: string;
-  image?: string;
-  status: "published" | "draft";
-};
-
-const DEFAULT_POSTS: PostItem[] = [
-  {
-    id: "p1",
-    tag: "Formación",
-    date: "Próxima convocatoria",
-    title: "Taller práctico de flujo digital y MARPE sobre microtornillos",
-    html: "<p>Sesión clínica presencial y online para equipos de ortodoncia. Revisaremos alineación de escaneado intraoral con CBCT y diseño de férulas de inserción guiada.</p>",
-    status: "published",
-  },
-  {
-    id: "p2",
-    tag: "Congreso",
-    date: "Congresos SEDO",
-    title: "Participación y talleres prácticos en congresos nacionales de ortodoncia",
-    html: "<p>Presentación de flujos digitales completos desde escaneado intraoral, cementado indirecto 3D y dispositivos intraorales de apnea D.A.M.A. TCD®.</p>",
-    status: "published",
-  },
-  {
-    id: "p3",
-    tag: "Novedad técnica",
-    date: "Innovación TCD",
-    title: "Cementado indirecto y directo 3D con cubetas impresas de alta precisión",
-    html: "<p>Guías de inserción compatibles con <strong>3M APC Flash-Free</strong> y cualquier sistema de brackets del mercado.</p>",
-    status: "published",
-  },
-  {
-    id: "p4",
-    tag: "Actualidad científica",
-    date: "Nylon PA12",
-    title: "Resina High Torque Soft Memory e impresión en Nylon PA12 para apnea",
-    html: "<p>Incorporamos nuevas resinas con memoria elástica y dispositivos DDBG en nylon biocompatible regulable en protrusión.</p>",
-    status: "published",
-  },
-];
+import { BackofficePost, BACKOFFICE_STORAGE_KEY, INITIAL_POSTS } from "@/lib/backoffice";
 
 export default function FormacionPage() {
-  const [posts, setPosts] = useState<PostItem[]>(DEFAULT_POSTS);
+  const [posts, setPosts] = useState<BackofficePost[]>(INITIAL_POSTS);
   const [tab, setTab] = useState<"todos" | "formacion" | "noticias">("todos");
 
   useEffect(() => {
     try {
-      const saved = localStorage.getItem("tcd_backoffice_v2");
+      const saved = localStorage.getItem(BACKOFFICE_STORAGE_KEY);
       if (saved) {
-        const parsed: PostItem[] = JSON.parse(saved);
+        const parsed: BackofficePost[] = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) setPosts(parsed);
       }
     } catch {}
   }, []);
 
   const published = posts.filter((p) => p.status === "published");
-  const isTraining = (tag: string) => tag === "Formación" || tag === "Congreso";
-  const courses = published.filter((p) => isTraining(p.tag));
-  const news = published.filter((p) => !isTraining(p.tag));
+  const courses = published.filter((p) => p.kind === "course");
+  const news = published.filter((p) => p.kind === "news");
 
-  const renderCard = (n: PostItem) => (
+  const renderCard = (n: BackofficePost) => (
     <article key={n.id} className="bg-white rounded-3xl overflow-hidden ring-1 ring-black/5 flex flex-col justify-between">
       <div>
         {n.image && (
@@ -122,7 +76,6 @@ export default function FormacionPage() {
           </div>
         </div>
 
-        {/* Bloque 1: Formación y Cursos */}
         {(tab === "todos" || tab === "formacion") && (
           <div className="space-y-6">
             <div className="flex items-center gap-2.5 border-b border-graphite/10 pb-3">
@@ -137,7 +90,6 @@ export default function FormacionPage() {
           </div>
         )}
 
-        {/* Bloque 2: Noticias y Actualidad Científica */}
         {(tab === "todos" || tab === "noticias") && (
           <div className="space-y-6">
             <div className="flex items-center gap-2.5 border-b border-graphite/10 pb-3">

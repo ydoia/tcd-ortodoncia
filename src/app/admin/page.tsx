@@ -3,110 +3,37 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { LogoMark } from "@/components/Logo";
 import RichEditor from "@/components/RichEditor";
+import {
+  BackofficePost, PostKind, PostStatus, AutoNews, PendingClinic, LabCase,
+  BACKOFFICE_STORAGE_KEY, INITIAL_POSTS, INITIAL_RSS, INITIAL_CASES, INITIAL_CLINICS, toSlug,
+} from "@/lib/backoffice";
 import { Grad, Spark, Plus, Lock, Check, Arrow, File, Upload, Shield, User, Cube } from "@/components/Icons";
 
-type Section = "overview" | "editor" | "rss" | "cases" | "clinics";
-type PostStatus = "published" | "draft";
-type PostItem = {
-  id: string;
-  tag: string;
-  date: string;
-  title: string;
-  slug: string;
-  metaTitle: string;
-  metaDesc: string;
-  html: string;
-  image?: string;
-  status: PostStatus;
-};
-type AutoNews = { id: string; source: string; date: string; title: string; summary: string };
-type PendingClinic = { id: string; clinic: string; doctor: string; email: string; dni: string; colegiado: string; lab: string; approved: boolean };
-type LabCase = { id: string; clinic: string; doctor: string; product: string; type: string; lab: string; date: string; stage: string };
-
-const INITIAL_POSTS: PostItem[] = [
-  {
-    id: "p1",
-    tag: "Formación",
-    date: "Marzo 2027",
-    title: "Taller práctico de flujo digital y MARPE sobre microtornillos",
-    slug: "taller-flujo-digital-marpe-microtornillos",
-    metaTitle: "Taller MARPE y Flujo Digital 3D · TCD Ortodoncia",
-    metaDesc: "Formación práctica para ortodoncistas sobre alineación CBCT + STL y férulas guiadas.",
-    html: "<p>Sesión clínica presencial y online para equipos de ortodoncia. Revisaremos alineación de escaneado intraoral con CBCT y diseño de férulas de inserción guiada.</p>",
-    status: "published",
-  },
-  {
-    id: "p2",
-    tag: "Novedad técnica",
-    date: "Noviembre 2026",
-    title: "Cementado indirecto y directo 3D con cubetas impresas",
-    slug: "cementado-indirecto-directo-3d-cubetas",
-    metaTitle: "Cementado Indirecto 3D · TCD Ortodoncia",
-    metaDesc: "Guías de inserción de alta precisión compatibles con 3M APC Flash-Free.",
-    html: "<p>Guías de inserción de alta precisión compatibles con <strong>3M APC Flash-Free</strong> y cualquier sistema de brackets.</p>",
-    status: "published",
-  },
-  {
-    id: "p3",
-    tag: "Congreso",
-    date: "Próxima edición",
-    title: "Borrador: Taller D.A.M.A. TCD® y dispositivos de apnea en nylon",
-    slug: "taller-dama-tcd-apnea-nylon",
-    metaTitle: "Taller D.A.M.A. TCD® · Apnea del Sueño",
-    metaDesc: "Protocolo clínico y toma de registro constructivo para dispositivos intraorales.",
-    html: "<p>Pendiente de confirmar fechas definitivas con el ponente y adjuntar programa en PDF.</p>",
-    status: "draft",
-  },
-];
-
-const INITIAL_RSS: AutoNews[] = [
-  {
-    id: "r1",
-    source: "PubMed · Ortodoncia Clínica",
-    date: "Hace 2 días",
-    title: "Precisión comparativa en férulas quirúrgicas 3D para microimplantes palatinos",
-    summary: "Estudio clínico sobre estabilidad primaria y menor desviación angular en protocolos MARPE guiados por CBCT.",
-  },
-  {
-    id: "r2",
-    source: "Sleep Medicine Reviews",
-    date: "Hace 4 días",
-    title: "Eficacia a largo plazo de los dispositivos de avance mandibular (DAM) regulables",
-    summary: "Revisión multicéntrica sobre adherencia y confort en pacientes con apnea leve y moderada.",
-  },
-];
-
-const INITIAL_CASES: LabCase[] = [
-  { id: "CAS-2084", clinic: "Clínica Dental Bahía", doctor: "Dra. Elena Ruiz", product: "MARPE Power-Screw", type: "STL + DICOM", lab: "Santander", date: "Hoy · 09:15", stage: "En diseño CAD" },
-  { id: "CAS-2083", clinic: "Ortodoncia Atlántico", doctor: "Dr. Marcos León", product: "DDBG nylon regulable", type: "STL + Registro", lab: "Las Palmas", date: "Hoy · 08:40", stage: "Producción 8h" },
-  { id: "CAS-2082", clinic: "Instituto Dental Norte", doctor: "Dr. Pablo Sáez", product: "Recogida física (modelo)", type: "Mensajería gratis", lab: "Santander", date: "Ayer · 17:20", stage: "Recibido" },
-];
-
-const INITIAL_CLINICS: PendingClinic[] = [
-  { id: "c1", clinic: "Clínica Dental Bahía", doctor: "Dra. Elena Ruiz", email: "elena@clinicabahia.es", dni: "72091843K", colegiado: "39001482", lab: "Santander", approved: false },
-  { id: "c2", clinic: "Ortodoncia Atlántico", doctor: "Dr. Marcos León", email: "mleon@ortodonciaatlantico.es", dni: "43812055M", colegiado: "35002190", lab: "Las Palmas", approved: true },
-  { id: "c3", clinic: "Instituto Dental Norte", doctor: "Dr. Pablo Sáez", email: "direccion@dentalnorte.es", dni: "13940218P", colegiado: "39002011", lab: "Santander", approved: false },
-];
-
-const toSlug = (s: string) =>
-  s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+type Section = "overview" | "courses" | "news" | "cases" | "clinics";
+type CourseTab = "list" | "editor";
+type NewsTab = "list" | "editor" | "rss";
 
 export default function AdminPage() {
   const [unlocked, setUnlocked] = useState(false);
   const [emailInput, setEmailInput] = useState("alberto@tcdortodoncia.com");
   const [passInput, setPassInput] = useState("");
-  const [section, setSection] = useState<Section>("overview");
-  const [filterStatus, setFilterStatus] = useState<"all" | PostStatus>("all");
 
-  const [posts, setPosts] = useState<PostItem[]>(INITIAL_POSTS);
+  const [section, setSection] = useState<Section>("overview");
+  const [overviewTab, setOverviewTab] = useState<PostKind>("course");
+  const [courseTab, setCourseTab] = useState<CourseTab>("list");
+  const [newsTab, setNewsTab] = useState<NewsTab>("list");
+  const [statusFilter, setStatusFilter] = useState<"all" | PostStatus>("all");
+
+  const [posts, setPosts] = useState<BackofficePost[]>(INITIAL_POSTS);
   const [rssQueue, setRssQueue] = useState<AutoNews[]>(INITIAL_RSS);
   const [cases, setCases] = useState<LabCase[]>(INITIAL_CASES);
   const [clinics, setClinics] = useState<PendingClinic[]>(INITIAL_CLINICS);
   const [notifyOnApprove, setNotifyOnApprove] = useState(true);
   const [toast, setToast] = useState<string | null>(null);
 
-  // Editor WordPress-style state
+  // Estado compartido del Editor Tiptap + Inspector derecho
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [editorKind, setEditorKind] = useState<PostKind>("course");
   const [title, setTitle] = useState("");
   const [slug, setSlug] = useState("");
   const [tag, setTag] = useState("Formación");
@@ -119,7 +46,7 @@ export default function AdminPage() {
 
   useEffect(() => {
     try {
-      const saved = localStorage.getItem("tcd_backoffice_v2");
+      const saved = localStorage.getItem(BACKOFFICE_STORAGE_KEY);
       if (saved) setPosts(JSON.parse(saved));
     } catch {}
   }, []);
@@ -129,25 +56,34 @@ export default function AdminPage() {
     setTimeout(() => setToast(null), 3200);
   };
 
-  const savePosts = (next: PostItem[]) => {
+  const savePosts = (next: BackofficePost[]) => {
     setPosts(next);
-    try { localStorage.setItem("tcd_backoffice_v2", JSON.stringify(next)); } catch {}
+    try { localStorage.setItem(BACKOFFICE_STORAGE_KEY, JSON.stringify(next)); } catch {}
   };
 
-  const resetEditor = () => {
+  const startNewInEditor = (kind: PostKind) => {
     setEditingId(null);
+    setEditorKind(kind);
     setTitle("");
     setSlug("");
-    setTag("Formación");
+    setTag(kind === "course" ? "Formación" : "Novedad técnica");
     setDate("");
     setCoverImg("");
     setHtml("<p></p>");
     setMetaTitle("");
     setMetaDesc("");
+    if (kind === "course") {
+      setSection("courses");
+      setCourseTab("editor");
+    } else {
+      setSection("news");
+      setNewsTab("editor");
+    }
   };
 
-  const openInEditor = (p: PostItem) => {
+  const openInEditor = (p: BackofficePost) => {
     setEditingId(p.id);
+    setEditorKind(p.kind);
     setTitle(p.title);
     setSlug(p.slug);
     setTag(p.tag);
@@ -156,7 +92,13 @@ export default function AdminPage() {
     setHtml(p.html);
     setMetaTitle(p.metaTitle);
     setMetaDesc(p.metaDesc);
-    setSection("editor");
+    if (p.kind === "course") {
+      setSection("courses");
+      setCourseTab("editor");
+    } else {
+      setSection("news");
+      setNewsTab("editor");
+    }
   };
 
   const handleSavePost = (targetStatus: PostStatus) => {
@@ -165,8 +107,9 @@ export default function AdminPage() {
       return;
     }
     const cleanSlug = slug.trim() || toSlug(title);
-    const payload: PostItem = {
+    const payload: BackofficePost = {
       id: editingId || Date.now().toString(),
+      kind: editorKind,
       tag,
       date: date || (targetStatus === "draft" ? "Borrador" : "Publicado hoy"),
       title: title.trim(),
@@ -183,9 +126,9 @@ export default function AdminPage() {
     } else {
       savePosts([payload, ...posts]);
     }
-    resetEditor();
-    showToast(targetStatus === "draft" ? "Borrador guardado (no visible en la web)." : "Publicado en la web pública.");
-    setSection("overview");
+    showToast(targetStatus === "draft" ? "Borrador guardado (oculto en la web)." : "Publicado en /formacion.");
+    if (editorKind === "course") setCourseTab("list");
+    else setNewsTab("list");
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -197,8 +140,9 @@ export default function AdminPage() {
   };
 
   const approveRss = (item: AutoNews) => {
-    const p: PostItem = {
+    const p: BackofficePost = {
       id: item.id,
+      kind: "news",
       tag: "Actualidad científica",
       date: item.source,
       title: item.title,
@@ -210,19 +154,22 @@ export default function AdminPage() {
     };
     savePosts([p, ...posts]);
     setRssQueue((q) => q.filter((x) => x.id !== item.id));
-    showToast("Noticia RSS aprobada y publicada.");
+    showToast("Noticia RSS aprobada y publicada en Noticias.");
   };
 
   const editRssInEditor = (item: AutoNews) => {
     setEditingId(null);
+    setEditorKind("news");
     setTitle(item.title);
     setSlug(toSlug(item.title));
     setTag("Actualidad científica");
     setDate(item.source);
+    setCoverImg("");
     setHtml(`<p>${item.summary}</p>`);
     setMetaTitle(item.title);
     setMetaDesc(item.summary);
-    setSection("editor");
+    setSection("news");
+    setNewsTab("editor");
   };
 
   const toggleClinicApproval = (id: string) => {
@@ -280,8 +227,168 @@ export default function AdminPage() {
     );
   }
 
+  const coursesList = posts.filter((p) => p.kind === "course");
+  const newsList = posts.filter((p) => p.kind === "news");
   const pendingClinicsCount = clinics.filter((c) => !c.approved).length;
-  const filteredPosts = posts.filter((p) => filterStatus === "all" || p.status === filterStatus);
+
+  const renderPostTable = (items: BackofficePost[], kind: PostKind) => {
+    const filtered = items.filter((p) => statusFilter === "all" || p.status === statusFilter);
+    return (
+      <div className="bg-white rounded-2xl border border-black/5 shadow-xs overflow-hidden">
+        <div className="px-6 py-4 border-b border-black/5 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            {([["all", "Todos"], ["published", "Publicados"], ["draft", "Borradores"]] as const).map(([k, lbl]) => (
+              <button
+                key={k}
+                onClick={() => setStatusFilter(k)}
+                className={`px-3.5 py-1.5 rounded-full text-xs font-semibold ${statusFilter === k ? "bg-graphite text-white" : "bg-bone text-graphite/65 hover:text-graphite"}`}
+              >
+                {lbl}
+              </button>
+            ))}
+          </div>
+          <button onClick={() => startNewInEditor(kind)} className="btn btn-primary !py-2 !px-4 text-xs">
+            <Plus className="w-3.5 h-3.5" />{kind === "course" ? "Nuevo curso" : "Nueva noticia"}
+          </button>
+        </div>
+
+        <div className="divide-y divide-black/5">
+          {filtered.length === 0 ? (
+            <div className="p-8 text-center text-xs text-graphite/50">No hay elementos en este filtro.</div>
+          ) : (
+            filtered.map((p) => (
+              <div key={p.id} className="px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-[#fafbfc]">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 text-xs">
+                    <span className="px-2.5 py-0.5 rounded-full bg-bone font-semibold">{p.tag}</span>
+                    <span className="text-graphite/45">{p.date}</span>
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${p.status === "published" ? "bg-emerald-100 text-emerald-700" : "bg-amber/25 text-amber-900"}`}>
+                      {p.status === "published" ? "Publicado" : "Borrador"}
+                    </span>
+                  </div>
+                  <p className="font-semibold text-sm">{p.title}</p>
+                  <p className="text-[11px] font-mono text-graphite/40">/formacion/{p.slug}</p>
+                </div>
+                <div className="flex items-center gap-2 shrink-0 text-xs">
+                  <button onClick={() => openInEditor(p)} className="px-3 py-1.5 rounded-lg bg-bone hover:bg-amber/20 font-semibold">Editar</button>
+                  <button
+                    onClick={() => savePosts(posts.map((x) => x.id === p.id ? { ...x, status: x.status === "published" ? "draft" : "published" } : x))}
+                    className="px-3 py-1.5 rounded-lg border border-black/10 hover:bg-bone font-medium"
+                  >
+                    {p.status === "published" ? "Pasar a borrador" : "Publicar"}
+                  </button>
+                  <button onClick={() => savePosts(posts.filter((x) => x.id !== p.id))} className="px-3 py-1.5 rounded-lg text-rose-600 hover:bg-rose-50 font-medium">Eliminar</button>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  const renderWysiwyg = (kind: PostKind) => (
+    <div className="grid lg:grid-cols-[1fr_340px] gap-6 items-start">
+      <div className="space-y-4 min-w-0">
+        <div className="bg-white rounded-2xl p-6 border border-black/5 shadow-xs">
+          <input
+            value={title}
+            onChange={(e) => {
+              setTitle(e.target.value);
+              if (!editingId) setSlug(toSlug(e.target.value));
+            }}
+            placeholder={kind === "course" ? "Título del curso o taller…" : "Titular de la noticia…"}
+            className="w-full font-display text-2xl sm:text-3xl font-bold outline-none placeholder:text-graphite/25"
+          />
+          <p className="text-[11px] font-mono text-graphite/40 mt-2">
+            URL: https://tcdortodoncia.com/formacion/<span className="text-graphite/80">{slug || toSlug(title) || "nueva-entrada"}</span>
+          </p>
+        </div>
+
+        <RichEditor value={html} onChange={setHtml} />
+      </div>
+
+      <aside className="bg-white rounded-2xl border border-black/5 shadow-xs overflow-hidden space-y-5 p-5">
+        <div className="grid grid-cols-2 gap-2">
+          <button type="button" onClick={() => handleSavePost("draft")} className="btn btn-ghost !py-2.5 !px-3 justify-center text-xs">Guardar borrador</button>
+          <button type="button" onClick={() => handleSavePost("published")} className="btn btn-primary !py-2.5 !px-3 justify-center text-xs">Publicar ahora</button>
+        </div>
+
+        <div className="grid grid-cols-2 gap-1 p-1 rounded-xl bg-bone text-xs font-semibold">
+          <button type="button" onClick={() => setInspectorTab("doc")} className={`py-2 rounded-lg ${inspectorTab === "doc" ? "bg-white shadow-xs text-graphite" : "text-graphite/55"}`}>Documento</button>
+          <button type="button" onClick={() => setInspectorTab("seo")} className={`py-2 rounded-lg ${inspectorTab === "seo" ? "bg-white shadow-xs text-graphite" : "text-graphite/55"}`}>SEO &amp; Google</button>
+        </div>
+
+        {inspectorTab === "doc" ? (
+          <div className="space-y-4 text-xs">
+            <div>
+              <label className="block font-semibold mb-1.5">Categoría</label>
+              <select value={tag} onChange={(e) => setTag(e.target.value)} className="input !py-2 text-xs">
+                {kind === "course" ? (
+                  <>
+                    <option>Formación</option>
+                    <option>Congreso</option>
+                    <option>Taller práctico</option>
+                  </>
+                ) : (
+                  <>
+                    <option>Novedad técnica</option>
+                    <option>Actualidad científica</option>
+                    <option>I+D Materiales</option>
+                  </>
+                )}
+              </select>
+            </div>
+            <div>
+              <label className="block font-semibold mb-1.5">Fecha o convocatoria</label>
+              <input value={date} onChange={(e) => setDate(e.target.value)} placeholder="Ej. Marzo 2027" className="input !py-2 text-xs" />
+            </div>
+            <div>
+              <label className="block font-semibold mb-1.5">Imagen destacada</label>
+              {coverImg && (
+                <div className="relative rounded-xl overflow-hidden mb-2 h-32 border border-black/10">
+                  <img src={coverImg} alt="" className="w-full h-full object-cover" />
+                  <button type="button" onClick={() => setCoverImg("")} className="absolute top-2 right-2 bg-black/70 text-white text-[10px] px-2 py-1 rounded">Quitar</button>
+                </div>
+              )}
+              <label className="flex items-center justify-center gap-2 px-3 py-3 rounded-xl border border-dashed border-black/20 hover:border-amber cursor-pointer bg-bone/60">
+                <Upload className="w-4 h-4 text-amber" />
+                <span>{coverImg ? "Cambiar imagen" : "Subir imagen destacada"}</span>
+                <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
+              </label>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-4 text-xs">
+            <div>
+              <label className="block font-semibold mb-1.5">Slug URL</label>
+              <input value={slug} onChange={(e) => setSlug(toSlug(e.target.value))} placeholder="url-amigable" className="input !py-2 text-xs font-mono" />
+            </div>
+            <div>
+              <div className="flex justify-between mb-1.5">
+                <label className="font-semibold">Meta Title</label>
+                <span className={(metaTitle || title).length > 60 ? "text-rose-600 font-bold" : "text-graphite/45"}>{(metaTitle || title).length}/60</span>
+              </div>
+              <input value={metaTitle} onChange={(e) => setMetaTitle(e.target.value)} placeholder={title || "Título en Google"} className="input !py-2 text-xs" />
+            </div>
+            <div>
+              <div className="flex justify-between mb-1.5">
+                <label className="font-semibold">Meta Description</label>
+                <span className={metaDesc.length > 160 ? "text-rose-600 font-bold" : "text-graphite/45"}>{metaDesc.length}/160</span>
+              </div>
+              <textarea rows={3} value={metaDesc} onChange={(e) => setMetaDesc(e.target.value)} placeholder="Descripción para buscadores e IA..." className="input !py-2 text-xs" />
+            </div>
+            <div className="p-3.5 rounded-xl bg-bone border border-black/10 space-y-1">
+              <p className="text-[10px] uppercase tracking-wider text-graphite/45 font-bold mb-1">Vista previa en Google</p>
+              <p className="text-[11px] text-emerald-700 truncate">tcdortodoncia.com › formacion › {slug || "articulo"}</p>
+              <p className="text-sm font-semibold text-blue-700 leading-snug line-clamp-1">{metaTitle || title || "Título · TCD Ortodoncia"}</p>
+              <p className="text-[11px] text-graphite/65 line-clamp-2">{metaDesc || "Resumen optimizado para buscadores."}</p>
+            </div>
+          </div>
+        )}
+      </aside>
+    </div>
+  );
 
   return (
     <div className="min-h-screen bg-[#f2f4f7] text-graphite flex flex-col lg:flex-row">
@@ -292,7 +399,7 @@ export default function AdminPage() {
         </div>
       )}
 
-      {/* SIDEBAR PRIVADA FIJA */}
+      {/* SIDEBAR COHERENTE */}
       <aside className="lg:w-64 bg-[#12151a] text-white flex flex-col shrink-0 border-r border-white/5">
         <div className="p-6 border-b border-white/10 flex items-center gap-3">
           <LogoMark className="h-5" />
@@ -304,9 +411,9 @@ export default function AdminPage() {
 
         <nav className="p-4 space-y-1.5 flex-1">
           {[
-            { id: "overview", label: "Resumen y Publicado", icon: <File className="w-4 h-4" /> },
-            { id: "editor", label: "Editor Cursos / Noticias", icon: <Grad className="w-4 h-4" /> },
-            { id: "rss", label: "Noticias RSS Auto", icon: <Spark className="w-4 h-4" />, badge: rssQueue.length },
+            { id: "overview", label: "Dashboard", icon: <File className="w-4 h-4" /> },
+            { id: "courses", label: "Cursos y Formación", icon: <Grad className="w-4 h-4" />, badge: coursesList.length },
+            { id: "news", label: "Noticias", icon: <Spark className="w-4 h-4" />, badge: rssQueue.length },
             { id: "cases", label: "Casos y Recogidas", icon: <Cube className="w-4 h-4" />, badge: cases.length },
             { id: "clinics", label: "Validar Clínicas", icon: <User className="w-4 h-4" />, badge: pendingClinicsCount },
           ].map((item) => {
@@ -314,10 +421,7 @@ export default function AdminPage() {
             return (
               <button
                 key={item.id}
-                onClick={() => {
-                  if (item.id === "editor" && section !== "editor") resetEditor();
-                  setSection(item.id as Section);
-                }}
+                onClick={() => setSection(item.id as Section)}
                 className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-xs font-semibold transition-all ${active ? "bg-amber text-graphite shadow" : "text-white/65 hover:bg-white/5 hover:text-white"}`}
               >
                 <span className="flex items-center gap-3">{item.icon}{item.label}</span>
@@ -332,8 +436,8 @@ export default function AdminPage() {
         </nav>
 
         <div className="p-4 border-t border-white/10 space-y-2 text-xs">
-          <Link href="/" target="_blank" className="flex items-center justify-between px-3 py-2 rounded-lg text-white/60 hover:bg-white/5 hover:text-white">
-            <span>Ver web pública</span><span>↗</span>
+          <Link href="/formacion" target="_blank" className="flex items-center justify-between px-3 py-2 rounded-lg text-white/60 hover:bg-white/5 hover:text-white">
+            <span>Ver Formación / Noticias</span><span>↗</span>
           </Link>
           <button onClick={() => setUnlocked(false)} className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-rose-400 hover:bg-rose-500/10">
             <Lock className="w-3.5 h-3.5" />Cerrar sesión
@@ -345,9 +449,9 @@ export default function AdminPage() {
       <div className="flex-1 flex flex-col min-w-0">
         <header className="bg-white border-b border-black/5 px-6 lg:px-8 h-16 flex items-center justify-between">
           <p className="font-display font-semibold text-base">
-            {section === "overview" && "Resumen de contenido público y borradores"}
-            {section === "editor" && (editingId ? "Editando publicación" : "Nueva publicación · Editor visual")}
-            {section === "rss" && "Curación automática RSS del sector"}
+            {section === "overview" && "Dashboard · Vista general"}
+            {section === "courses" && "Cursos y Formación"}
+            {section === "news" && "Noticias y Actualidad RSS"}
             {section === "cases" && "Bandeja de prescripciones STL/DICOM y recogidas"}
             {section === "clinics" && "Control de altas, DNI/colegiado y tarifas privadas"}
           </p>
@@ -358,14 +462,14 @@ export default function AdminPage() {
         </header>
 
         <div className="p-6 lg:p-8 max-w-7xl w-full space-y-6">
-          {/* 1. RESUMEN Y CONTENIDO PUBLICADO */}
+          {/* 1. DASHBOARD VISUAL CON PESTAÑAS FORMACIÓN / NOTICIAS */}
           {section === "overview" && (
             <>
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 {[
-                  ["Publicados en web", posts.filter((p) => p.status === "published").length, "Visibles en /formacion"],
-                  ["Borradores guardados", posts.filter((p) => p.status === "draft").length, "Solo visibles aquí"],
-                  ["Noticias RSS en cola", rssQueue.length, "Pendientes de aprobar"],
+                  ["Cursos publicados", coursesList.filter((p) => p.status === "published").length, `${coursesList.filter((p) => p.status === "draft").length} en borrador`],
+                  ["Noticias publicadas", newsList.filter((p) => p.status === "published").length, `${newsList.filter((p) => p.status === "draft").length} en borrador`],
+                  ["RSS pendientes", rssQueue.length, "Cron automático semanal"],
                   ["Clínicas por validar", pendingClinicsCount, "Esperando tarifas"],
                 ].map(([lbl, val, sub]) => (
                   <div key={String(lbl)} className="bg-white rounded-2xl p-5 border border-black/5 shadow-xs">
@@ -376,212 +480,106 @@ export default function AdminPage() {
                 ))}
               </div>
 
-              <div className="bg-white rounded-2xl border border-black/5 shadow-xs overflow-hidden">
-                <div className="px-6 py-4 border-b border-black/5 flex flex-wrap items-center justify-between gap-3">
-                  <div className="flex items-center gap-2">
-                    {[
-                      ["all", "Todos"],
-                      ["published", "Publicados"],
-                      ["draft", "Borradores"],
-                    ].map(([k, lbl]) => (
-                      <button
-                        key={k}
-                        onClick={() => setFilterStatus(k as "all" | PostStatus)}
-                        className={`px-3.5 py-1.5 rounded-full text-xs font-semibold ${filterStatus === k ? "bg-graphite text-white" : "bg-bone text-graphite/65 hover:text-graphite"}`}
-                      >
-                        {lbl}
-                      </button>
-                    ))}
+              {/* Resumen visual rápido con pestañas Formación / Noticias */}
+              <div className="space-y-4">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="flex gap-1.5 bg-white p-1.5 rounded-full border border-black/5">
+                    <button onClick={() => setOverviewTab("course")} className={`px-4 py-1.5 rounded-full text-xs font-semibold ${overviewTab === "course" ? "bg-graphite text-white" : "text-graphite/60"}`}>
+                      Formación y Cursos ({coursesList.length})
+                    </button>
+                    <button onClick={() => setOverviewTab("news")} className={`px-4 py-1.5 rounded-full text-xs font-semibold ${overviewTab === "news" ? "bg-graphite text-white" : "text-graphite/60"}`}>
+                      Noticias ({newsList.length})
+                    </button>
                   </div>
-                  <button onClick={() => { resetEditor(); setSection("editor"); }} className="btn btn-primary !py-2 !px-4 text-xs"><Plus className="w-3.5 h-3.5" />Nueva publicación</button>
+                  <div className="flex gap-2">
+                    <button onClick={() => startNewInEditor("course")} className="btn btn-ghost !py-2 !px-3.5 text-xs">+ Nuevo curso</button>
+                    <button onClick={() => startNewInEditor("news")} className="btn btn-primary !py-2 !px-3.5 text-xs">+ Nueva noticia</button>
+                  </div>
                 </div>
-                <div className="divide-y divide-black/5">
-                  {filteredPosts.map((p) => (
-                    <div key={p.id} className="px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-[#fafbfc]">
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2 text-xs">
-                          <span className="px-2.5 py-0.5 rounded-full bg-bone font-semibold">{p.tag}</span>
-                          <span className="text-graphite/45">{p.date}</span>
-                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${p.status === "published" ? "bg-emerald-100 text-emerald-700" : "bg-amber/25 text-amber-900"}`}>
-                            {p.status === "published" ? "Publicado" : "Borrador"}
-                          </span>
-                        </div>
-                        <p className="font-semibold text-sm">{p.title}</p>
-                        <p className="text-[11px] font-mono text-graphite/40">/formacion/{p.slug}</p>
-                      </div>
-                      <div className="flex items-center gap-2 shrink-0 text-xs">
-                        <button onClick={() => openInEditor(p)} className="px-3 py-1.5 rounded-lg bg-bone hover:bg-amber/20 font-semibold">Editar</button>
-                        <button
-                          onClick={() => savePosts(posts.map((x) => x.id === p.id ? { ...x, status: x.status === "published" ? "draft" : "published" } : x))}
-                          className="px-3 py-1.5 rounded-lg border border-black/10 hover:bg-bone font-medium"
-                        >
-                          {p.status === "published" ? "Pasar a borrador" : "Publicar"}
-                        </button>
-                        <button onClick={() => savePosts(posts.filter((x) => x.id !== p.id))} className="px-3 py-1.5 rounded-lg text-rose-600 hover:bg-rose-50 font-medium">Eliminar</button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                {renderPostTable(overviewTab === "course" ? coursesList : newsList, overviewTab)}
               </div>
             </>
           )}
 
-          {/* 2. EDITOR PROFESIONAL TIPO WORDPRESS (LIENZO TIPTAP + INSPECTOR DERECHO) */}
-          {section === "editor" && (
-            <div className="grid lg:grid-cols-[1fr_340px] gap-6 items-start">
-              {/* Lienzo central */}
-              <div className="space-y-4 min-w-0">
-                <div className="bg-white rounded-2xl p-6 border border-black/5 shadow-xs">
-                  <input
-                    value={title}
-                    onChange={(e) => {
-                      setTitle(e.target.value);
-                      if (!editingId) setSlug(toSlug(e.target.value));
-                    }}
-                    placeholder="Añade un título claro para el curso o noticia…"
-                    className="w-full font-display text-2xl sm:text-3xl font-bold outline-none placeholder:text-graphite/25"
-                  />
-                  <p className="text-[11px] font-mono text-graphite/40 mt-2">
-                    URL: https://tcdortodoncia.com/formacion/<span className="text-graphite/80">{slug || toSlug(title) || "nueva-publicacion"}</span>
-                  </p>
-                </div>
-
-                <RichEditor value={html} onChange={setHtml} />
+          {/* 2. APARTADO CURSOS Y FORMACIÓN (SIMÉTRICO) */}
+          {section === "courses" && (
+            <div className="space-y-6">
+              <div className="flex gap-2 border-b border-black/10 pb-3">
+                <button onClick={() => setCourseTab("list")} className={`px-4 py-2 rounded-xl text-xs font-semibold ${courseTab === "list" ? "bg-graphite text-white" : "bg-white text-graphite/65"}`}>
+                  Listado de Cursos ({coursesList.length})
+                </button>
+                <button onClick={() => { if (editorKind !== "course") startNewInEditor("course"); else setCourseTab("editor"); }} className={`px-4 py-2 rounded-xl text-xs font-semibold ${courseTab === "editor" ? "bg-graphite text-white" : "bg-white text-graphite/65"}`}>
+                  {editingId && editorKind === "course" ? "Editando curso" : "+ Editor visual de Cursos"}
+                </button>
               </div>
-
-              {/* Inspector lateral derecho (estilo WordPress / Ghost) */}
-              <aside className="bg-white rounded-2xl border border-black/5 shadow-xs overflow-hidden space-y-5 p-5">
-                {/* Acciones de publicación */}
-                <div className="grid grid-cols-2 gap-2">
-                  <button type="button" onClick={() => handleSavePost("draft")} className="btn btn-ghost !py-2.5 !px-3 justify-center text-xs">
-                    Guardar borrador
-                  </button>
-                  <button type="button" onClick={() => handleSavePost("published")} className="btn btn-primary !py-2.5 !px-3 justify-center text-xs">
-                    Publicar ahora
-                  </button>
-                </div>
-
-                {/* Pestañas Documento / SEO */}
-                <div className="grid grid-cols-2 gap-1 p-1 rounded-xl bg-bone text-xs font-semibold">
-                  <button type="button" onClick={() => setInspectorTab("doc")} className={`py-2 rounded-lg ${inspectorTab === "doc" ? "bg-white shadow-xs text-graphite" : "text-graphite/55"}`}>
-                    Documento
-                  </button>
-                  <button type="button" onClick={() => setInspectorTab("seo")} className={`py-2 rounded-lg ${inspectorTab === "seo" ? "bg-white shadow-xs text-graphite" : "text-graphite/55"}`}>
-                    SEO &amp; Google
-                  </button>
-                </div>
-
-                {inspectorTab === "doc" ? (
-                  <div className="space-y-4 text-xs">
-                    <div>
-                      <label className="block font-semibold mb-1.5">Categoría</label>
-                      <select value={tag} onChange={(e) => setTag(e.target.value)} className="input !py-2 text-xs">
-                        <option>Formación</option>
-                        <option>Congreso</option>
-                        <option>Novedad técnica</option>
-                        <option>Actualidad científica</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block font-semibold mb-1.5">Fecha o convocatoria</label>
-                      <input value={date} onChange={(e) => setDate(e.target.value)} placeholder="Ej. Marzo 2027" className="input !py-2 text-xs" />
-                    </div>
-                    <div>
-                      <label className="block font-semibold mb-1.5">Imagen destacada</label>
-                      {coverImg && (
-                        <div className="relative rounded-xl overflow-hidden mb-2 h-32 border border-black/10">
-                          <img src={coverImg} alt="" className="w-full h-full object-cover" />
-                          <button type="button" onClick={() => setCoverImg("")} className="absolute top-2 right-2 bg-black/70 text-white text-[10px] px-2 py-1 rounded">Quitar</button>
-                        </div>
-                      )}
-                      <label className="flex items-center justify-center gap-2 px-3 py-3 rounded-xl border border-dashed border-black/20 hover:border-amber cursor-pointer bg-bone/60">
-                        <Upload className="w-4 h-4 text-amber" />
-                        <span>{coverImg ? "Cambiar imagen" : "Subir imagen destacada"}</span>
-                        <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
-                      </label>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="space-y-4 text-xs">
-                    <div>
-                      <label className="block font-semibold mb-1.5">Slug URL</label>
-                      <input value={slug} onChange={(e) => setSlug(toSlug(e.target.value))} placeholder="url-amigable" className="input !py-2 text-xs font-mono" />
-                    </div>
-                    <div>
-                      <div className="flex justify-between mb-1.5">
-                        <label className="font-semibold">Meta Title</label>
-                        <span className={(metaTitle || title).length > 60 ? "text-rose-600 font-bold" : "text-graphite/45"}>{(metaTitle || title).length}/60</span>
-                      </div>
-                      <input value={metaTitle} onChange={(e) => setMetaTitle(e.target.value)} placeholder={title || "Título en Google"} className="input !py-2 text-xs" />
-                    </div>
-                    <div>
-                      <div className="flex justify-between mb-1.5">
-                        <label className="font-semibold">Meta Description</label>
-                        <span className={metaDesc.length > 160 ? "text-rose-600 font-bold" : "text-graphite/45"}>{metaDesc.length}/160</span>
-                      </div>
-                      <textarea rows={3} value={metaDesc} onChange={(e) => setMetaDesc(e.target.value)} placeholder="Descripción breve para buscadores e IA..." className="input !py-2 text-xs" />
-                    </div>
-
-                    {/* Vista previa SERP Google */}
-                    <div className="p-3.5 rounded-xl bg-bone border border-black/10 space-y-1">
-                      <p className="text-[10px] uppercase tracking-wider text-graphite/45 font-bold mb-1">Vista previa en Google</p>
-                      <p className="text-[11px] text-emerald-700 truncate">tcdortodoncia.com › formacion › {slug || "articulo"}</p>
-                      <p className="text-sm font-semibold text-blue-700 leading-snug line-clamp-1">{metaTitle || title || "Título de la publicación · TCD Ortodoncia"}</p>
-                      <p className="text-[11px] text-graphite/65 line-clamp-2">{metaDesc || "Resumen optimizado para que doctores y buscadores encuentren el curso o artículo."}</p>
-                    </div>
-                  </div>
-                )}
-              </aside>
+              {courseTab === "list" ? renderPostTable(coursesList, "course") : renderWysiwyg("course")}
             </div>
           )}
 
-          {/* 3. CURACIÓN AUTOMÁTICA RSS */}
-          {section === "rss" && (
+          {/* 3. APARTADO NOTICIAS (SIMÉTRICO + CRON RSS) */}
+          {section === "news" && (
             <div className="space-y-6">
-              <div className="bg-white rounded-2xl p-6 border border-black/5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div>
-                  <h2 className="font-display text-lg">Fuentes RSS conectadas (sin competencia directa)</h2>
-                  <p className="text-xs text-graphite/60 mt-1">
-                    Lectura semanal de <strong>PubMed Ortodoncia</strong>, <strong>SEDO</strong> y <strong>Sleep Medicine Reviews</strong>. Envío de resumen por correo a <code>alberto@tcdortodoncia.com</code> antes de publicar.
-                  </p>
-                </div>
-                <span className="px-3 py-1.5 rounded-full bg-emerald-100 text-emerald-800 text-xs font-semibold shrink-0">Cron RSS activo ✓</span>
+              <div className="flex flex-wrap gap-2 border-b border-black/10 pb-3">
+                <button onClick={() => setNewsTab("list")} className={`px-4 py-2 rounded-xl text-xs font-semibold ${newsTab === "list" ? "bg-graphite text-white" : "bg-white text-graphite/65"}`}>
+                  Listado de Noticias ({newsList.length})
+                </button>
+                <button onClick={() => { if (editorKind !== "news") startNewInEditor("news"); else setNewsTab("editor"); }} className={`px-4 py-2 rounded-xl text-xs font-semibold ${newsTab === "editor" ? "bg-graphite text-white" : "bg-white text-graphite/65"}`}>
+                  {editingId && editorKind === "news" ? "Editando noticia" : "+ Editor visual de Noticias"}
+                </button>
+                <button onClick={() => setNewsTab("rss")} className={`px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 ${newsTab === "rss" ? "bg-graphite text-white" : "bg-white text-graphite/65"}`}>
+                  <Spark className="w-3.5 h-3.5 text-amber" />Noticias Automáticas (Cron RSS)
+                  {rssQueue.length > 0 && <span className="px-1.5 py-0.5 rounded-full bg-amber text-graphite text-[10px] font-bold">{rssQueue.length}</span>}
+                </button>
               </div>
 
-              {rssQueue.length === 0 ? (
-                <div className="bg-white rounded-2xl p-10 text-center text-sm text-graphite/60 border border-black/5">No quedan artículos pendientes de revisar.</div>
-              ) : (
-                <div className="space-y-4">
-                  {rssQueue.map((item) => (
-                    <div key={item.id} className="bg-white rounded-2xl p-6 border border-black/5 flex flex-col md:flex-row md:items-center justify-between gap-6">
-                      <div className="space-y-1.5">
-                        <div className="flex items-center gap-2 text-xs">
-                          <span className="px-2.5 py-0.5 rounded-full bg-amber/20 text-graphite font-semibold">{item.source}</span>
-                          <span className="text-graphite/45">{item.date}</span>
-                        </div>
-                        <h3 className="font-display text-xl">{item.title}</h3>
-                        <p className="text-sm text-graphite/65">{item.summary}</p>
-                      </div>
-                      <div className="flex flex-wrap gap-2 shrink-0">
-                        <button onClick={() => approveRss(item)} className="btn btn-primary !py-2 !px-4 text-xs">Aprobar y publicar</button>
-                        <button onClick={() => editRssInEditor(item)} className="btn btn-ghost !py-2 !px-4 text-xs">Abrir en Editor</button>
-                        <button onClick={() => setRssQueue((q) => q.filter((x) => x.id !== item.id))} className="px-3 py-2 text-xs text-rose-600 hover:bg-rose-50 rounded-full">Descartar</button>
-                      </div>
+              {newsTab === "list" && renderPostTable(newsList, "news")}
+              {newsTab === "editor" && renderWysiwyg("news")}
+              {newsTab === "rss" && (
+                <div className="space-y-5">
+                  <div className="bg-white rounded-2xl p-6 border border-black/5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                      <h2 className="font-display text-lg">Fuentes RSS conectadas (sin competencia directa)</h2>
+                      <p className="text-xs text-graphite/60 mt-1">
+                        Cron semanal sobre <strong>PubMed Ortodoncia</strong>, <strong>SEDO</strong> y <strong>Sleep Medicine Reviews</strong>. Envío de aviso por email a <code>alberto@tcdortodoncia.com</code> antes de publicar.
+                      </p>
                     </div>
-                  ))}
+                    <span className="px-3 py-1.5 rounded-full bg-emerald-100 text-emerald-800 text-xs font-semibold shrink-0">Cron RSS activo ✓</span>
+                  </div>
+
+                  {rssQueue.length === 0 ? (
+                    <div className="bg-white rounded-2xl p-10 text-center text-sm text-graphite/60 border border-black/5">No quedan noticias automáticas pendientes de aprobar.</div>
+                  ) : (
+                    <div className="space-y-4">
+                      {rssQueue.map((item) => (
+                        <div key={item.id} className="bg-white rounded-2xl p-6 border border-black/5 flex flex-col md:flex-row md:items-center justify-between gap-6">
+                          <div className="space-y-1.5">
+                            <div className="flex items-center gap-2 text-xs">
+                              <span className="px-2.5 py-0.5 rounded-full bg-amber/20 text-graphite font-semibold">{item.source}</span>
+                              <span className="text-graphite/45">{item.date}</span>
+                            </div>
+                            <h3 className="font-display text-xl">{item.title}</h3>
+                            <p className="text-sm text-graphite/65">{item.summary}</p>
+                          </div>
+                          <div className="flex flex-wrap gap-2 shrink-0">
+                            <button onClick={() => approveRss(item)} className="btn btn-primary !py-2 !px-4 text-xs">Aprobar y publicar</button>
+                            <button onClick={() => editRssInEditor(item)} className="btn btn-ghost !py-2 !px-4 text-xs">Editar en Tiptap</button>
+                            <button onClick={() => setRssQueue((q) => q.filter((x) => x.id !== item.id))} className="px-3 py-2 text-xs text-rose-600 hover:bg-rose-50 rounded-full">Descartar</button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
           )}
 
-          {/* 4. BANDEJA DE CASOS Y RECOGIDAS */}
+          {/* 4. CASOS Y RECOGIDAS */}
           {section === "cases" && (
             <div className="bg-white rounded-2xl border border-black/5 overflow-x-auto">
-              <div className="px-6 py-4 border-b border-black/5 flex items-center justify-between">
-                <div>
-                  <h2 className="font-display text-lg">Casos digitales y recogidas recibidas</h2>
-                  <p className="text-xs text-graphite/55">Enrutados automáticamente por sede (Santander / Las Palmas).</p>
-                </div>
+              <div className="px-6 py-4 border-b border-black/5">
+                <h2 className="font-display text-lg">Casos digitales y recogidas recibidas</h2>
+                <p className="text-xs text-graphite/55">Enrutados automáticamente por sede (Santander / Las Palmas).</p>
               </div>
               <table className="w-full text-left text-sm">
                 <thead className="bg-bone text-xs uppercase tracking-wider text-graphite/55 border-b border-black/5">
@@ -623,7 +621,7 @@ export default function AdminPage() {
             </div>
           )}
 
-          {/* 5. VALIDACIÓN DE CLÍNICAS Y AVISOS POR EMAIL */}
+          {/* 5. VALIDAR CLÍNICAS */}
           {section === "clinics" && (
             <div className="space-y-5">
               <div className="bg-white rounded-2xl p-5 border border-black/5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
