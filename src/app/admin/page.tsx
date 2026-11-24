@@ -30,6 +30,8 @@ export default function AdminPage() {
 
   const [posts, setPosts] = useState<BackofficePost[]>(INITIAL_POSTS);
   const [rssQueue, setRssQueue] = useState<AutoNews[]>(INITIAL_RSS);
+  const [rssLoading, setRssLoading] = useState(false);
+  const [rssLastSync, setRssLastSync] = useState<string | null>(null);
   const [cases, setCases] = useState<LabCase[]>(INITIAL_CASES);
   const [clinics, setClinics] = useState<PendingClinic[]>(INITIAL_CLINICS);
   const [notifyOnApprove, setNotifyOnApprove] = useState(true);
@@ -143,17 +145,39 @@ export default function AdminPage() {
     reader.readAsDataURL(file);
   };
 
+  const syncRssNow = async () => {
+    setRssLoading(true);
+    try {
+      const res = await fetch("/api/rss");
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data.items) && data.items.length > 0) {
+          setRssQueue(data.items);
+          setRssLastSync(new Date().toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" }));
+          showToast(`Sincronizadas ${data.items.length} noticias reales de PubMed y Prensa Dental.`);
+        } else {
+          showToast("No se encontraron artículos nuevos en este momento.");
+        }
+      }
+    } catch {
+      showToast("No se pudo conectar con los feeds RSS en este momento.");
+    } finally {
+      setRssLoading(false);
+    }
+  };
+
   const approveRss = (item: AutoNews) => {
+    const linkHtml = item.url ? `<p><a href="${item.url}" target="_blank" rel="noopener noreferrer">Leer fuente original ↗</a></p>` : "";
     const p: BackofficePost = {
       id: item.id,
       kind: "news",
       tag: "Actualidad científica",
-      date: item.source,
+      date: item.date,
       title: item.title,
       slug: toSlug(item.title),
       metaTitle: item.title,
       metaDesc: item.summary,
-      html: `<p>${item.summary}</p>`,
+      html: `<p>${item.summary}</p>${linkHtml}`,
       image: "/assets/tcd/laboratorio-tcd.jpg",
       status: "published",
     };
@@ -642,13 +666,21 @@ export default function AdminPage() {
                     <div className="flex items-start gap-3.5">
                       <span className="w-10 h-10 rounded-xl bg-amber/15 text-amber grid place-items-center shrink-0"><RssIcon className="w-5 h-5" /></span>
                       <div>
-                        <h2 className="font-display text-lg font-semibold">Fuentes RSS conectadas (sin competencia directa)</h2>
+                        <h2 className="font-display text-lg font-semibold">Fuentes RSS conectadas en vivo (sin competencia directa)</h2>
                         <p className="text-sm text-slate-500 mt-1">
-                          Lectura semanal de <strong>PubMed Ortodoncia</strong>, <strong>SEDO</strong> y <strong>Sleep Medicine Reviews</strong> con aviso por email a <code>alberto@tcdortodoncia.com</code>.
+                          Lectura directa de <strong>PubMed Ortodoncia / Apnea</strong> y <strong>Prensa Dental Española</strong> filtrando marcas competidoras.
+                          {rssLastSync && <span className="ml-2 text-emerald-700 font-medium">· Última sincronización: {rssLastSync}</span>}
                         </p>
                       </div>
                     </div>
-                    <span className="px-3.5 py-1.5 rounded-full bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200 text-xs font-semibold shrink-0">Cron RSS activo ✓</span>
+                    <button
+                      type="button"
+                      onClick={syncRssNow}
+                      disabled={rssLoading}
+                      className="px-4 py-2.5 rounded-xl bg-amber hover:bg-sun text-graphite text-xs font-semibold shadow-xs shrink-0 disabled:opacity-50 transition-colors"
+                    >
+                      {rssLoading ? "Sincronizando…" : "↻ Sincronizar RSS ahora"}
+                    </button>
                   </div>
 
                   {rssQueue.length === 0 ? (

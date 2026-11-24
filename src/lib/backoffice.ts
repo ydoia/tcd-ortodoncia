@@ -25,7 +25,7 @@ export type BackofficePost = {
   status: PostStatus;
 };
 
-export type AutoNews = { id: string; source: string; date: string; title: string; summary: string };
+export type AutoNews = { id: string; source: string; date: string; title: string; summary: string; url?: string };
 export type PendingClinic = { id: string; clinic: string; doctor: string; email: string; dni: string; colegiado: string; lab: string; approved: boolean };
 export type LabCase = { id: string; clinic: string; doctor: string; product: string; type: string; lab: string; date: string; stage: string };
 
